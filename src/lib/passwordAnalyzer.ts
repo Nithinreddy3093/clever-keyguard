@@ -70,6 +70,7 @@ const generateSuggestions = (password: string, analysis: {
   isCommon: boolean;
   hasCommonPattern: boolean;
   commonPatterns: string[];
+  score: number; // Added score property to match usage
 }): string[] => {
   const suggestions: string[] = [];
   
@@ -202,7 +203,7 @@ export const analyzePassword = (password: string): PasswordAnalysis => {
   const timeToCrack = estimateCrackTime(entropy);
   
   // Generate suggestions
-  const suggestions = generateSuggestions(password, analysisObj);
+  const suggestions = generateSuggestions(password, {...analysisObj, score});
   
   return {
     ...analysisObj,
