@@ -1,6 +1,9 @@
 
 import { PasswordAnalysis } from "@/types/password";
 import { containsCommonPattern } from "./commonPatterns";
+import { detectPatterns } from "./mlPatternDetector";
+import { enhancePassword } from "./aiPasswordEnhancer";
+import { estimateCrackTime } from "./crackTimeSimulator";
 
 // Common passwords list (simplified)
 const commonPasswords = new Set([
@@ -22,44 +25,6 @@ const calculateEntropy = (password: string): number => {
   return password.length * Math.log2(charSet || 1);
 };
 
-// Estimate time to crack based on entropy
-const estimateCrackTime = (entropy: number): Record<string, string> => {
-  // Assuming different cracking rates for different attack types
-  // Values are in guesses per second
-  const rateOfflineFastHash = 10_000_000_000; // 10 billion/sec
-  const rateOnline = 1_000; // 1,000/sec
-  const rateDictionary = 1_000_000_000; // 1 billion/sec
-  
-  // Calculate times in seconds
-  const offlineSeconds = Math.pow(2, entropy) / rateOfflineFastHash;
-  const onlineSeconds = Math.pow(2, entropy) / rateOnline;
-  const dictionarySeconds = rateDictionary > 0 ? Math.pow(2, entropy / 2) / rateDictionary : Infinity;
-  
-  return {
-    "Brute Force (Offline)": formatTime(offlineSeconds),
-    "Online Attack": formatTime(onlineSeconds),
-    "Dictionary Attack": formatTime(dictionarySeconds)
-  };
-};
-
-// Format time in human-readable format
-const formatTime = (seconds: number): string => {
-  if (seconds < 1) return "Instantly";
-  if (seconds < 60) return `${Math.round(seconds)} seconds`;
-  if (seconds < 3600) return `${Math.round(seconds / 60)} minutes`;
-  if (seconds < 86400) return `${Math.round(seconds / 3600)} hours`;
-  if (seconds < 2592000) return `${Math.round(seconds / 86400)} days`;
-  if (seconds < 31536000) return `${Math.round(seconds / 2592000)} months`;
-  if (seconds < 3153600000) return `${Math.round(seconds / 31536000)} years`;
-  
-  const centuries = seconds / 31536000 / 100;
-  if (centuries < 1000) return `${Math.round(centuries)} centuries`;
-  if (centuries < 1000000) return `${Math.round(centuries / 1000)}k centuries`;
-  if (centuries < 1000000000) return `${Math.round(centuries / 1000000)}M centuries`;
-  
-  return "Heat death of universe";
-};
-
 // Generate suggestions to improve the password
 const generateSuggestions = (password: string, analysis: {
   length: number;
@@ -70,15 +35,12 @@ const generateSuggestions = (password: string, analysis: {
   isCommon: boolean;
   hasCommonPattern: boolean;
   commonPatterns: string[];
-  score: number; // Added score property to match usage
+  mlPatterns: ReturnType<typeof detectPatterns>;
+  score: number;
 }): string[] => {
   const suggestions: string[] = [];
   
-  // Common substitute characters
-  const substitutions: Record<string, string> = {
-    'a': '@', 'e': '3', 'i': '!', 'o': '0', 'l': '1', 's': '$'
-  };
-  
+  // Add basic suggestions based on missing criteria
   if (analysis.length < 12) {
     suggestions.push("Increase password length to at least 12 characters.");
   }
@@ -109,14 +71,45 @@ const generateSuggestions = (password: string, analysis: {
     suggestions.push(`Avoid common patterns (${patternList}).`);
   }
   
-  // Simple character substitution suggestion
-  if (analysis.score < 3) {
-    const enhancedPwd = password.split('').map(char => 
-      substitutions[char.toLowerCase()] || char
-    ).join('');
+  // Add ML-based pattern suggestions
+  if (analysis.mlPatterns.length > 0) {
+    // Get the top 2 most confident patterns
+    const topPatterns = [...analysis.mlPatterns]
+      .sort((a, b) => b.confidence - a.confidence)
+      .slice(0, 2);
     
-    if (enhancedPwd !== password) {
-      suggestions.push(`Try character substitutions like: ${enhancedPwd}`);
+    topPatterns.forEach(pattern => {
+      switch (pattern.type) {
+        case 'keyboard':
+          suggestions.push("Avoid keyboard patterns like 'qwerty' or 'asdfgh'.");
+          break;
+        case 'sequential':
+          suggestions.push("Avoid sequential numbers like '12345'.");
+          break;
+        case 'common_word':
+          suggestions.push("Avoid using common dictionary words.");
+          break;
+        case 'word_number':
+          suggestions.push("The pattern 'word + numbers' (e.g., 'password123') is very common and easy to crack.");
+          break;
+        case 'name_year':
+          suggestions.push("Using a name followed by a year (e.g., 'john2023') is a very common pattern.");
+          break;
+        case 'date':
+          suggestions.push("Date formats are easily guessable. Avoid birthdays or significant dates.");
+          break;
+        case 'repetitive_character':
+          suggestions.push("Avoid repeating characters (e.g., 'aaa' or '111').");
+          break;
+      }
+    });
+  }
+  
+  // Add AI-enhanced password suggestion if score is low
+  if (analysis.score < 3) {
+    const enhancedResult = enhancePassword(password, analysis.score);
+    if (enhancedResult.originalPassword !== enhancedResult.enhancedPassword) {
+      suggestions.push(`Try this AI-enhanced alternative: "${enhancedResult.enhancedPassword}"`);
     }
   }
   
@@ -137,6 +130,7 @@ const calculateScore = (analysis: {
   hasSpecial: boolean;
   isCommon: boolean;
   hasCommonPattern: boolean;
+  mlPatterns: ReturnType<typeof detectPatterns>;
   entropy: number;
 }): number => {
   if (analysis.isCommon) return 0;
@@ -163,6 +157,20 @@ const calculateScore = (analysis: {
   // Reduce score if common patterns found
   if (analysis.hasCommonPattern) score = Math.max(0, score - 1);
   
+  // Reduce score based on ML pattern detection
+  if (analysis.mlPatterns.length > 0) {
+    // Find the pattern with highest confidence
+    const highestConfidencePattern = analysis.mlPatterns.reduce(
+      (max, pattern) => pattern.confidence > max.confidence ? pattern : max,
+      { confidence: 0 } as (typeof analysis.mlPatterns)[0]
+    );
+    
+    // If high confidence pattern found, reduce score
+    if (highestConfidencePattern.confidence > 0.9) {
+      score = Math.max(0, score - 1);
+    }
+  }
+  
   // Cap at 4
   return Math.min(4, Math.round(score));
 };
@@ -175,10 +183,13 @@ export const analyzePassword = (password: string): PasswordAnalysis => {
   const hasSpecial = /[^A-Za-z0-9]/.test(password);
   const isCommon = commonPasswords.has(password.toLowerCase());
   
-  // Check for common patterns
+  // Check for common patterns (simple pattern detection)
   const patternCheck = containsCommonPattern(password);
   const hasCommonPattern = patternCheck.found;
   const commonPatterns = patternCheck.patterns;
+  
+  // Advanced ML-based pattern detection
+  const mlPatterns = detectPatterns(password);
   
   // Calculate entropy
   const entropy = calculateEntropy(password);
@@ -193,22 +204,35 @@ export const analyzePassword = (password: string): PasswordAnalysis => {
     isCommon,
     hasCommonPattern,
     commonPatterns,
+    mlPatterns,
     entropy
   };
   
   // Calculate overall score
   const score = calculateScore(analysisObj);
   
-  // Time to crack
-  const timeToCrack = estimateCrackTime(entropy);
+  // Enhanced crack time simulation
+  const crackTimeEstimates = estimateCrackTime(entropy);
+  
+  // Simplified time to crack for backwards compatibility
+  const timeToCrack = {
+    "Brute Force (Offline)": crackTimeEstimates["SHA-256 (GPU)"].timeToBreak,
+    "Online Attack": formatCrackTime(Math.pow(2, entropy) / 1000),
+    "Dictionary Attack": formatCrackTime(Math.pow(2, entropy / 2) / 1_000_000_000)
+  };
   
   // Generate suggestions
   const suggestions = generateSuggestions(password, {...analysisObj, score});
+  
+  // AI-enhanced password suggestion
+  const aiEnhanced = enhancePassword(password, score);
   
   return {
     ...analysisObj,
     score,
     timeToCrack,
-    suggestions
+    suggestions,
+    crackTimeEstimates,
+    aiEnhanced
   };
 };
