@@ -1,13 +1,14 @@
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Trash2, ArrowLeft } from "lucide-react";
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import StrengthMeter from "@/components/StrengthMeter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface PasswordHistoryItem {
   id: string;
@@ -24,25 +25,16 @@ interface PasswordHistoryItem {
 }
 
 const History = () => {
-  const [session, setSession] = useState<any>(null);
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_, session) => {
-        setSession(session);
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
+    if (!user) {
+      navigate("/auth");
+    }
+  }, [user, navigate]);
 
   const fetchPasswordHistory = async () => {
     const { data, error } = await supabase
@@ -57,7 +49,7 @@ const History = () => {
   const { data: passwordHistory, isLoading, error } = useQuery({
     queryKey: ["passwordHistory"],
     queryFn: fetchPasswordHistory,
-    enabled: !!session,
+    enabled: !!user,
   });
 
   const deletePasswordMutation = useMutation({
@@ -92,7 +84,7 @@ const History = () => {
     }
   };
 
-  if (!session) {
+  if (!user) {
     return <Navigate to="/auth" />;
   }
 
