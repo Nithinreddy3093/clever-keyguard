@@ -182,7 +182,7 @@ export const analyzePassword = (password: string): PasswordAnalysis => {
   // Calculate entropy
   const entropy = calculateEntropy(password);
   
-  // Analysis object
+  // Analysis object with basic info
   const analysisObj = {
     length: password.length,
     hasUpper,
