@@ -9,7 +9,54 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      password_history: {
+        Row: {
+          created_at: string
+          entropy: number
+          has_common_pattern: boolean
+          has_digit: boolean
+          has_lower: boolean
+          has_special: boolean
+          has_upper: boolean
+          id: string
+          is_common: boolean
+          length: number
+          password_hash: string
+          score: number
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          entropy: number
+          has_common_pattern: boolean
+          has_digit: boolean
+          has_lower: boolean
+          has_special: boolean
+          has_upper: boolean
+          id?: string
+          is_common: boolean
+          length: number
+          password_hash: string
+          score: number
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          entropy?: number
+          has_common_pattern?: boolean
+          has_digit?: boolean
+          has_lower?: boolean
+          has_special?: boolean
+          has_upper?: boolean
+          id?: string
+          is_common?: boolean
+          length?: number
+          password_hash?: string
+          score?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
