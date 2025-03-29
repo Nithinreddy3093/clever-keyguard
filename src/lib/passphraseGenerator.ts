@@ -151,3 +151,42 @@ export const calculatePassphraseStrength = (passphrase: string): number => {
   
   return entropy;
 };
+
+// Get memory-friendly passphrases with mnemonic hints
+export const getMemorablePassphrases = (count: number = 3): Array<{passphrase: string, hint: string}> => {
+  const results: Array<{passphrase: string, hint: string}> = [];
+  
+  for (let i = 0; i < count; i++) {
+    // Create a passphrase with a story-like structure
+    const options: PassphraseOptions = {
+      wordCount: 3 + (i % 2), // Alternate between 3 and 4 words
+      addNumber: true,
+      addSpecial: true,
+      capitalizeWords: true
+    };
+    
+    const passphrase = generatePassphrase(options);
+    
+    // Extract words by removing numbers and special chars
+    const words = passphrase
+      .replace(/[0-9]/g, '')
+      .replace(/[^A-Za-z]/g, '')
+      .match(/[A-Z][a-z]*/g) || [];
+    
+    // Create a simple mnemonic hint
+    let hint = "";
+    if (words.length >= 3) {
+      hint = `Imagine a ${words[1].toLowerCase()} that is ${words[0].toLowerCase()} and ${words[2].toLowerCase()}`;
+      if (words.length >= 4) {
+        hint += ` a ${words[3].toLowerCase()}`;
+      }
+    }
+    
+    results.push({
+      passphrase,
+      hint
+    });
+  }
+  
+  return results;
+};

@@ -7,7 +7,7 @@ import PasswordInput from "@/components/PasswordInput";
 import StrengthMeter from "@/components/StrengthMeter";
 import PasswordFeedback from "@/components/PasswordFeedback";
 import SecurityTips from "@/components/SecurityTips";
-import { Shield, Lock, AlertTriangle, Save, Zap } from "lucide-react";
+import { Shield, Lock, AlertTriangle, Save, Zap, KeyRound } from "lucide-react";
 import { analyzePassword } from "@/lib/passwordAnalyzer";
 import { PasswordAnalysis } from "@/types/password";
 import { useAuth } from "@/contexts/AuthContext";
@@ -87,6 +87,14 @@ const Index = () => {
           <p className="text-xl text-slate-600 dark:text-slate-300">
             Advanced analysis with AI-powered security features
           </p>
+          <div className="mt-6">
+            <Button asChild variant="outline" className="mx-2">
+              <Link to="/passphrase" className="flex items-center">
+                <KeyRound className="mr-2 h-4 w-4" />
+                Generate Secure Passphrase
+              </Link>
+            </Button>
+          </div>
         </header>
 
         <Card className="mb-8 border-none shadow-lg">

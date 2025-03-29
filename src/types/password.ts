@@ -30,7 +30,7 @@ export interface PasswordAnalysis {
     improvements: string[];
     strengthIncrease: number;
   };
-  // New fields for Phase 1 enhancements
+  // Phase 1 enhancements
   attackResistance: {
     bruteForce: number;
     dictionary: number;
@@ -45,4 +45,11 @@ export interface PasswordAnalysis {
     riskLevel: 'low' | 'medium' | 'high' | 'critical';
   };
   passphraseSuggestions: string[];
+  // Phase 2 enhancements (planned)
+  breachData?: {
+    found: boolean;
+    breachCount?: number;
+    sources?: string[];
+    lastBreached?: string;
+  };
 }
