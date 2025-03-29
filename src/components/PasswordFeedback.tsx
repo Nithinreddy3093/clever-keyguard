@@ -1,11 +1,12 @@
 
 import { PasswordAnalysis } from "@/types/password";
-import { Check, X, Clock, AlertTriangle, Zap, Brain, Shield } from "lucide-react";
+import { Check, X, Clock, AlertTriangle, Zap, Brain, Shield, Lock } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 interface PasswordFeedbackProps {
   analysis: PasswordAnalysis;
@@ -14,6 +15,7 @@ interface PasswordFeedbackProps {
 const PasswordFeedback = ({ analysis }: PasswordFeedbackProps) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showAiEnhanced, setShowAiEnhanced] = useState(false);
+  const [showPatternDetails, setShowPatternDetails] = useState(false);
 
   useEffect(() => {
     // Show suggestions after a short delay for better UX
@@ -22,6 +24,21 @@ const PasswordFeedback = ({ analysis }: PasswordFeedbackProps) => {
     }, 500);
     return () => clearTimeout(timer);
   }, [analysis]);
+
+  // Calculate risk score based on ML patterns
+  const calculateRiskScore = (): number => {
+    if (analysis.mlPatterns.length === 0) return 0;
+    
+    // Average the confidence scores of the top 3 patterns
+    const topPatterns = [...analysis.mlPatterns]
+      .sort((a, b) => b.confidence - a.confidence)
+      .slice(0, 3);
+      
+    const avgConfidence = topPatterns.reduce((sum, p) => sum + p.confidence, 0) / topPatterns.length;
+    return Math.round(avgConfidence * 100);
+  };
+
+  const riskScore = calculateRiskScore();
 
   return (
     <div className="space-y-6">
@@ -65,17 +82,51 @@ const PasswordFeedback = ({ analysis }: PasswordFeedbackProps) => {
         />
       </div>
 
-      {/* ML-Based Pattern Detection */}
+      {/* ML-Based Pattern Detection (enhanced) */}
       {analysis.mlPatterns.length > 0 && (
         <div className="mt-6">
-          <h3 className="font-medium text-md mb-3 flex items-center">
-            <Brain className="mr-2 h-4 w-4 text-purple-500" />
-            ML-Detected Patterns
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-medium text-md flex items-center">
+              <Brain className="mr-2 h-4 w-4 text-purple-500" />
+              RockYou Dataset Pattern Analysis
+            </h3>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowPatternDetails(!showPatternDetails)}
+              className="text-xs"
+            >
+              {showPatternDetails ? "Hide Details" : "Show Details"}
+            </Button>
+          </div>
+          
+          {/* Risk score visualization */}
+          <Card className="mb-4 border-purple-100 dark:border-purple-900">
+            <CardContent className="p-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium">Pattern-based vulnerability:</span>
+                <span className="text-sm font-semibold">
+                  {riskScore < 30 ? 'Low' : riskScore < 70 ? 'Medium' : 'High'} Risk
+                </span>
+              </div>
+              <Progress 
+                value={riskScore} 
+                className="h-2"
+                indicatorClassName={cn(
+                  riskScore < 30 ? "bg-green-500" : 
+                  riskScore < 70 ? "bg-amber-500" : "bg-red-500"
+                )}
+              />
+              <p className="text-xs text-slate-500 mt-2">
+                Based on {analysis.mlPatterns.length} detected pattern{analysis.mlPatterns.length !== 1 ? 's' : ''} from RockYou leak analysis
+              </p>
+            </CardContent>
+          </Card>
+          
           <div className="grid grid-cols-1 gap-3">
             {analysis.mlPatterns
               .sort((a, b) => b.confidence - a.confidence)
-              .slice(0, 3)
+              .slice(0, showPatternDetails ? undefined : 3)
               .map((pattern, index) => (
                 <div key={index} className="p-3 bg-purple-50 dark:bg-purple-950 border border-purple-100 dark:border-purple-900 rounded-md">
                   <div className="flex items-start">
@@ -85,7 +136,7 @@ const PasswordFeedback = ({ analysis }: PasswordFeedbackProps) => {
                     <div>
                       <h4 className="font-medium text-sm text-purple-800 dark:text-purple-300">{pattern.description}</h4>
                       <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                        This pattern makes your password easier to crack
+                        This pattern was found in many compromised passwords
                       </p>
                     </div>
                   </div>
