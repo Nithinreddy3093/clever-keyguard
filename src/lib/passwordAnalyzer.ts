@@ -1,9 +1,8 @@
-
 import { PasswordAnalysis } from "@/types/password";
 import { containsCommonPattern } from "./commonPatterns";
 import { detectPatterns } from "./mlPatternDetector";
 import { enhancePassword } from "./aiPasswordEnhancer";
-import { estimateCrackTime } from "./crackTimeSimulator";
+import { estimateCrackTime, formatCrackTime } from "./crackTimeSimulator";
 
 // Common passwords list (simplified)
 const commonPasswords = new Set([
