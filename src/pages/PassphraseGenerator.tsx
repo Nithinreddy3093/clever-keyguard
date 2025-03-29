@@ -1,11 +1,12 @@
 
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Shield, RefreshCw, Copy, Check } from "lucide-react";
+import { Shield, RefreshCw, Copy, Check, ArrowLeft } from "lucide-react";
 import { generatePassphrase, PassphraseOptions, calculatePassphraseStrength } from "@/lib/passphraseGenerator";
 import { useToast } from "@/hooks/use-toast";
 
@@ -54,6 +55,15 @@ const PassphraseGenerator = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       <div className="container max-w-4xl py-12 px-4 sm:px-6">
+        <div className="mb-4">
+          <Button variant="ghost" size="sm" asChild className="flex items-center gap-1">
+            <Link to="/">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Password Analyzer
+            </Link>
+          </Button>
+        </div>
+
         <header className="text-center mb-12">
           <div className="flex justify-center mb-4">
             <Shield className="h-16 w-16 text-primary" />
