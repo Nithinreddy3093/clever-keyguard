@@ -7,7 +7,7 @@ import PasswordInput from "@/components/PasswordInput";
 import StrengthMeter from "@/components/StrengthMeter";
 import PasswordFeedback from "@/components/PasswordFeedback";
 import SecurityTips from "@/components/SecurityTips";
-import { Shield, Lock, AlertTriangle, Save } from "lucide-react";
+import { Shield, Lock, AlertTriangle, Save, Zap } from "lucide-react";
 import { analyzePassword } from "@/lib/passwordAnalyzer";
 import { PasswordAnalysis } from "@/types/password";
 import { useAuth } from "@/contexts/AuthContext";
@@ -82,10 +82,10 @@ const Index = () => {
             <Shield className="h-16 w-16 text-primary" />
           </div>
           <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white mb-3">
-            Password Strength Analyzer
+            AI Password Strength Analyzer
           </h1>
           <p className="text-xl text-slate-600 dark:text-slate-300">
-            AI-powered analysis to help you create stronger, safer passwords
+            Advanced analysis with AI-powered security features
           </p>
         </header>
 
@@ -101,6 +101,28 @@ const Index = () => {
             {analysis && (
               <div className="mt-4">
                 <StrengthMeter score={analysis.score} />
+                
+                <div className="mt-4">
+                  {analysis.hackabilityScore && (
+                    <div className="mb-4 flex items-center justify-between">
+                      <div className="flex items-center">
+                        <Zap className="mr-2 h-4 w-4 text-amber-500" />
+                        <span className="text-sm font-medium mr-2">Hackability Risk:</span>
+                        <span className={`text-sm font-semibold ${
+                          analysis.hackabilityScore.riskLevel === 'critical' ? 'text-red-500' :
+                          analysis.hackabilityScore.riskLevel === 'high' ? 'text-orange-500' :
+                          analysis.hackabilityScore.riskLevel === 'medium' ? 'text-amber-500' :
+                          'text-green-500'
+                        }`}>
+                          {analysis.hackabilityScore.riskLevel.charAt(0).toUpperCase() + analysis.hackabilityScore.riskLevel.slice(1)}
+                        </span>
+                      </div>
+                      <span className="text-sm font-semibold">
+                        {analysis.hackabilityScore.timeToHack} to crack
+                      </span>
+                    </div>
+                  )}
+                </div>
                 
                 {user && (
                   <div className="mt-4 flex justify-end">

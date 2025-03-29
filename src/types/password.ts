@@ -30,4 +30,19 @@ export interface PasswordAnalysis {
     improvements: string[];
     strengthIncrease: number;
   };
+  // New fields for Phase 1 enhancements
+  attackResistance: {
+    bruteForce: number;
+    dictionary: number;
+    patternBased: number;
+    aiAttack: number;
+    overall: number;
+  };
+  hackabilityScore: {
+    score: number;
+    reasoning: string[];
+    timeToHack: string;
+    riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  };
+  passphraseSuggestions: string[];
 }

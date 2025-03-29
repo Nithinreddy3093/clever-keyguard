@@ -1,4 +1,3 @@
-
 // Machine Learning-based pattern detector simulating training on the RockYou dataset
 // This provides sophisticated pattern recognition based on leaked password analysis
 
@@ -11,6 +10,21 @@ interface DetectedPattern {
   description: string;
   confidence: number; // 0-1 scale of confidence in detection
   position: [number, number]; // Start and end position in the password
+}
+
+export interface AttackResistance {
+  bruteForce: number;   // 0-100 resistance score
+  dictionary: number;   // 0-100 resistance score 
+  patternBased: number; // 0-100 resistance score
+  aiAttack: number;     // 0-100 resistance score
+  overall: number;      // 0-100 weighted average
+}
+
+export interface HackabilityScore {
+  score: number;        // 0-100 scale, higher means more hackable
+  reasoning: string[];  // Reasons why this password is hackable
+  timeToHack: string;   // Human readable format
+  riskLevel: 'low' | 'medium' | 'high' | 'critical';
 }
 
 // Expanded common patterns from RockYou leak analysis (top 100)
@@ -62,6 +76,20 @@ const movieCharacters = [
   'gandalf', 'frodo', 'skywalker', 'vader', 'naruto', 'spongebob',
   'simpsons', 'homer', 'pokemon', 'pikachu', 'mickey', 'donald', 'goofy'
 ];
+
+// RockYou frequency data (simulated based on real analysis)
+const rockyouFrequencyTop = {
+  "123456": 290729,
+  "12345": 79076,
+  "123456789": 59462,
+  "password": 59184,
+  "iloveyou": 49952,
+  "princess": 33291,
+  "1234567": 21725,
+  "rockyou": 20901,
+  "12345678": 20553,
+  "abc123": 17542
+};
 
 // Advanced pattern detection techniques simulating a Random Forest classifier
 export const detectPatterns = (password: string): DetectedPattern[] => {
@@ -217,6 +245,149 @@ export const detectPatterns = (password: string): DetectedPattern[] => {
   });
 };
 
+// Calculate attack resistance scores (new function)
+export const calculateAttackResistance = (
+  password: string, 
+  patterns: DetectedPattern[], 
+  entropy: number
+): AttackResistance => {
+  // Calculate resistance to brute force attacks (based on entropy)
+  // Higher entropy = more resistant to brute force
+  const bruteForceFactor = Math.min(100, entropy * 1.5);
+  
+  // Calculate resistance to dictionary attacks
+  // Presence of common words reduces resistance
+  let dictionaryResistance = 100;
+  const commonWordPatterns = patterns.filter(p => 
+    ['common_word', 'popular_phrase', 'sports_team', 'movie_character'].includes(p.type)
+  );
+  
+  if (commonWordPatterns.length > 0) {
+    // Reduce score based on number and confidence of common patterns
+    const confidenceSum = commonWordPatterns.reduce((sum, p) => sum + p.confidence, 0);
+    const patternPenalty = (confidenceSum / commonWordPatterns.length) * 80; // Up to 80% penalty
+    dictionaryResistance = Math.max(20, 100 - patternPenalty);
+  }
+  
+  // Calculate resistance to pattern-based attacks
+  // Patterns like sequential numbers, keyboard patterns, etc.
+  let patternResistance = 100;
+  const structuralPatterns = patterns.filter(p => 
+    ['sequential', 'keyboard', 'repeating', 'date', 'name_year', 'word_number'].includes(p.type)
+  );
+  
+  if (structuralPatterns.length > 0) {
+    // Similar penalty calculation
+    const confidenceSum = structuralPatterns.reduce((sum, p) => sum + p.confidence, 0);
+    const patternPenalty = (confidenceSum / structuralPatterns.length) * 90; // Up to 90% penalty
+    patternResistance = Math.max(10, 100 - patternPenalty);
+  }
+  
+  // Calculate resistance to AI-driven attacks
+  // AI tools can identify substitution patterns, leet speak, etc.
+  let aiResistance = 85; // Base value
+  const aiVulnerablePatterns = patterns.filter(p => 
+    ['leet_speak', 'character_substitution', 'capitalized_word', 'word_special'].includes(p.type)
+  );
+  
+  // AI vulnerability increases based on character variety and patterns
+  if (password.length < 12) aiResistance -= 20;
+  if (aiVulnerablePatterns.length > 0) {
+    const confidenceSum = aiVulnerablePatterns.reduce((sum, p) => sum + p.confidence, 0);
+    const aiPenalty = (confidenceSum / aiVulnerablePatterns.length) * 60; // Up to 60% penalty
+    aiResistance = Math.max(25, aiResistance - aiPenalty);
+  }
+  
+  // Calculate overall resistance score (weighted average)
+  const overall = Math.round(
+    (bruteForceFactor * 0.3) + 
+    (dictionaryResistance * 0.25) + 
+    (patternResistance * 0.25) + 
+    (aiResistance * 0.2)
+  );
+  
+  return {
+    bruteForce: Math.round(bruteForceFactor),
+    dictionary: Math.round(dictionaryResistance),
+    patternBased: Math.round(patternResistance),
+    aiAttack: Math.round(aiResistance),
+    overall: Math.round(overall)
+  };
+};
+
+// Calculate AI-driven hackability score
+export const calculateHackabilityScore = (
+  password: string,
+  patterns: DetectedPattern[],
+  entropy: number,
+  crackTimeInSeconds: number
+): HackabilityScore => {
+  let hackabilityScore = 0;
+  const reasons: string[] = [];
+  
+  // Is it in the top 10000 RockYou passwords? (simulated check)
+  if (rockyouFrequencyTop[password.toLowerCase() as keyof typeof rockyouFrequencyTop]) {
+    hackabilityScore += 50;
+    const frequency = rockyouFrequencyTop[password.toLowerCase() as keyof typeof rockyouFrequencyTop];
+    reasons.push(`This exact password appeared ${frequency} times in the RockYou data breach`);
+  }
+  
+  // Analyze patterns with high confidence as significant contributors to hackability
+  const highConfidencePatterns = patterns.filter(p => p.confidence > 0.8);
+  if (highConfidencePatterns.length > 0) {
+    hackabilityScore += 10 * highConfidencePatterns.length;
+    highConfidencePatterns.forEach(pattern => {
+      reasons.push(`Contains a ${pattern.description.toLowerCase()} (${Math.round(pattern.confidence * 100)}% confidence)`);
+    });
+  }
+  
+  // Short passwords are easily hackable
+  if (password.length < 8) {
+    hackabilityScore += 20;
+    reasons.push(`Short password (${password.length} characters) can be brute forced quickly`);
+  } else if (password.length < 12) {
+    hackabilityScore += 10;
+    reasons.push(`Moderate length password (${password.length} characters) offers limited protection`);
+  }
+  
+  // Low entropy = high hackability
+  if (entropy < 40) {
+    hackabilityScore += 15;
+    reasons.push(`Low entropy (${Math.round(entropy)} bits) indicates predictable character combinations`);
+  }
+  
+  // Calculate risk level based on final score
+  let riskLevel: 'low' | 'medium' | 'high' | 'critical' = 'low';
+  if (hackabilityScore > 80) riskLevel = 'critical';
+  else if (hackabilityScore > 60) riskLevel = 'high';
+  else if (hackabilityScore > 40) riskLevel = 'medium';
+  
+  // Cap at 100
+  hackabilityScore = Math.min(100, hackabilityScore);
+  
+  // Time to hack (simplified from crack time)
+  let timeToHack = "Unknown";
+  if (crackTimeInSeconds < 60) timeToHack = "Instantly";
+  else if (crackTimeInSeconds < 3600) timeToHack = "Minutes";
+  else if (crackTimeInSeconds < 86400) timeToHack = "Hours";
+  else if (crackTimeInSeconds < 2592000) timeToHack = "Days";
+  else if (crackTimeInSeconds < 31536000) timeToHack = "Months";
+  else if (crackTimeInSeconds < 315360000) timeToHack = "Years";
+  else timeToHack = "Centuries";
+  
+  // If we don't have specific reasons but the score is high, add generic reason
+  if (reasons.length === 0 && hackabilityScore > 30) {
+    reasons.push("Multiple subtle weakness patterns detected");
+  }
+  
+  return {
+    score: Math.round(hackabilityScore),
+    reasoning: reasons,
+    timeToHack,
+    riskLevel
+  };
+};
+
 // Helper function to check if a string of digits is sequential
 const isSequentialNumber = (digits: string): boolean => {
   // Must be at least 3 digits to be considered sequential
@@ -258,4 +429,3 @@ const calculateCharsetFactor = (password: string): number => {
   const charsetCount = [hasLower, hasUpper, hasDigit, hasSpecial].filter(Boolean).length;
   return charsetCount / 4; // Normalized to 0-1 range
 };
-

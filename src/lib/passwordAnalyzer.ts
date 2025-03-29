@@ -1,9 +1,9 @@
-
 import { PasswordAnalysis } from "@/types/password";
 import { containsCommonPattern } from "./commonPatterns";
-import { detectPatterns } from "./mlPatternDetector";
+import { detectPatterns, calculateAttackResistance, calculateHackabilityScore } from "./mlPatternDetector";
 import { enhancePassword } from "./aiPasswordEnhancer";
 import { estimateCrackTime, formatCrackTime } from "./crackTimeSimulator";
+import { generatePassphraseSuggestions } from "./passphraseGenerator";
 
 // Common passwords list (expanded from RockYou top 100)
 const commonPasswords = new Set([
@@ -260,6 +260,9 @@ export const analyzePassword = (password: string): PasswordAnalysis => {
   // Enhanced crack time simulation
   const crackTimeEstimates = estimateCrackTime(entropy);
   
+  // Get the SHA-256 GPU crack time for use in hackability score
+  const sha256GPUTimeInSeconds = crackTimeEstimates["SHA-256 (GPU)"].timeInSeconds;
+  
   // Simplified time to crack for backwards compatibility
   const timeToCrack = {
     "Brute Force (Offline)": crackTimeEstimates["SHA-256 (GPU)"].timeToBreak,
@@ -273,12 +276,32 @@ export const analyzePassword = (password: string): PasswordAnalysis => {
   // AI-enhanced password suggestion
   const aiEnhanced = enhancePassword(password, score);
   
+  // New features for Phase 1
+  
+  // Calculate attack resistance scores
+  const attackResistance = calculateAttackResistance(password, mlPatterns, entropy);
+  
+  // Calculate AI-driven hackability score
+  const hackabilityScore = calculateHackabilityScore(
+    password, 
+    mlPatterns, 
+    entropy, 
+    sha256GPUTimeInSeconds
+  );
+  
+  // Generate passphrase suggestions (3 options)
+  const passphraseSuggestions = generatePassphraseSuggestions(3);
+  
   return {
     ...analysisObj,
     score,
     timeToCrack,
     suggestions,
     crackTimeEstimates,
-    aiEnhanced
+    aiEnhanced,
+    // New Phase 1 features
+    attackResistance,
+    hackabilityScore,
+    passphraseSuggestions
   };
 };
