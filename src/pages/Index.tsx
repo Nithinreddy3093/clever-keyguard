@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +6,7 @@ import PasswordInput from "@/components/PasswordInput";
 import StrengthMeter from "@/components/StrengthMeter";
 import PasswordFeedback from "@/components/PasswordFeedback";
 import SecurityTips from "@/components/SecurityTips";
-import { Shield, Lock, AlertTriangle, Save, Zap, KeyRound } from "lucide-react";
+import { Shield, Lock, AlertTriangle, Save, Zap, KeyRound, Bot } from "lucide-react";
 import { analyzePassword } from "@/lib/passwordAnalyzer";
 import { PasswordAnalysis } from "@/types/password";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,7 +35,6 @@ const Index = () => {
     mutationFn: async () => {
       if (!analysis || !user) return;
       
-      // Hash the password before saving (never store actual passwords)
       const passwordHash = crypto.SHA256(password).toString();
       
       const { error } = await supabase.from("password_history").insert({
@@ -87,11 +85,17 @@ const Index = () => {
           <p className="text-xl text-slate-600 dark:text-slate-300">
             Advanced analysis with AI-powered security features
           </p>
-          <div className="mt-6">
+          <div className="mt-6 flex flex-wrap justify-center gap-2">
             <Button asChild variant="outline" className="mx-2">
               <Link to="/passphrase" className="flex items-center">
                 <KeyRound className="mr-2 h-4 w-4" />
                 Generate Secure Passphrase
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="mx-2">
+              <Link to="/chat" className="flex items-center">
+                <Bot className="mr-2 h-4 w-4" />
+                AI Security Assistant
               </Link>
             </Button>
           </div>
