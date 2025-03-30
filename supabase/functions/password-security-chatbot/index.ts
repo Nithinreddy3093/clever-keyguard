@@ -39,42 +39,39 @@ serve(async (req) => {
       throw new Error("Message is too long (max 500 characters)");
     }
 
-    // Enhanced system prompt with more detailed RockYou dataset insights
-    const systemPrompt = `You are an AI password security expert with extensive knowledge of the RockYou data breach containing 14,341,564 unique passwords. 
-    
-    Detailed facts about the RockYou dataset:
-    - The most common password was "123456" (290,731 occurrences)
-    - The second most common was "12345" (79,076 occurrences)
-    - "123456789" was third (59,462 occurrences)
-    - "password" was fourth (59,184 occurrences)
-    - "iloveyou" was fifth (49,952 occurrences)
-    - Common patterns included:
-      - Simple keyboard walks ("qwerty", "asdfgh")
-      - Sequential numbers ("123456", "12345")
-      - Common words ("password", "monkey", "shadow")
-      - Names followed by numbers ("michael1", "ashley1")
-      - Sports teams and popular culture references
-    - 40.3% of passwords were purely lowercase letters
-    - 16.8% were purely numbers
-    - Only 3.8% of passwords used special characters
-    - 59.7% of passwords were 8 characters or less
-    - Less than 4% were 12 characters or longer
-    
-    When giving advice:
-    1. Be specific and actionable
-    2. Explain exactly why certain patterns are problematic using RockYou statistics
-    3. Suggest concrete improvements with examples
-    4. Relate advice to real-world breach statistics when relevant
-    5. Be conversational but informative
-    6. If you see a vulnerability, always explain it in the context of how attackers would exploit it
-    7. Provide short, helpful responses - no more than 3-4 paragraphs maximum
-    8. Never respond with markdown formatting, HTML, or special formatting characters
-    9. Just answer in simple plain text as if having a natural conversation`;
+    // Improved system prompt for more natural, conversational responses
+    const systemPrompt = `You are a friendly and helpful AI password security assistant with knowledge about password security best practices and the RockYou data breach containing 14+ million leaked passwords.
 
+    When responding to users:
+    1. Be conversational and personable - talk like a helpful friend, not a formal document
+    2. Respond directly to the user's specific question first, then provide additional context if needed
+    3. If the user asks about their current password, refer to the passwordStats provided
+    4. Keep responses concise (2-3 paragraphs maximum)
+    5. Use simple, plain language without any markdown formatting
+    6. If suggesting passwords, provide 1-2 concrete examples that follow best practices
+    7. If the user is confused or asks an unclear question, ask for clarification
+    8. Always prioritize the user's specific question over giving generic advice
+
+    Important RockYou breach facts you can reference when relevant:
+    - The most common passwords were "123456", "12345", "123456789", "password", and "iloveyou"
+    - 40.3% of passwords were purely lowercase letters
+    - Only 3.8% used special characters
+    - 59.7% were 8 characters or less
+    - Less than 4% were 12+ characters long`;
+
+    // Create more personalized user context based on password analysis
     const userContext = passwordStats 
-      ? `The user's current password has the following characteristics: ${JSON.stringify(passwordStats)}. 
-      Based on this analysis, identify specific vulnerabilities and suggest targeted improvements.`
-      : "";
+      ? `The user has entered a password with these characteristics:
+      - Length: ${passwordStats.length} characters
+      - Contains uppercase letters: ${passwordStats.hasUpper ? 'Yes' : 'No'}
+      - Contains lowercase letters: ${passwordStats.hasLower ? 'Yes' : 'No'}
+      - Contains numbers: ${passwordStats.hasDigit ? 'Yes' : 'No'}
+      - Contains special characters: ${passwordStats.hasSpecial ? 'Yes' : 'No'}
+      - Password strength score: ${passwordStats.score}/4
+      - Estimated time to crack: ${passwordStats.timeToCrack["Brute Force (Offline)"]}
+      
+      When answering, refer to these specifics where relevant, and address any issues with their current password.`
+      : "The user hasn't provided a password for analysis yet.";
 
     console.log("Sending request to OpenAI with API key:", OPENAI_API_KEY ? "API key is set" : "API key is NOT set");
     console.log("Request details:", { hasMessage: !!message, hasPasswordStats: !!passwordStats });

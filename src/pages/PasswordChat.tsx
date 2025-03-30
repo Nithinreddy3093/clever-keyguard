@@ -72,7 +72,14 @@ const PasswordChat = () => {
               <Alert className="mt-4 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-900">
                 <Info className="h-4 w-4 text-blue-500" />
                 <AlertDescription className="text-xs text-blue-700 dark:text-blue-400">
-                  Try asking the AI assistant questions like "How can I create a stronger password?" or "Why are special characters important?"
+                  Try asking questions like:
+                  <ul className="list-disc ml-5 mt-1">
+                    <li>"What's wrong with this password?"</li>
+                    <li>"How can I make my password stronger?"</li>
+                    <li>"Why is my password weak?"</li>
+                    <li>"Generate a secure password for me"</li>
+                    <li>"What patterns should I avoid in passwords?"</li>
+                  </ul>
                 </AlertDescription>
               </Alert>
             </div>

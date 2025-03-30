@@ -32,6 +32,7 @@ const PasswordChatbot = ({ currentAnalysis }: PasswordChatbotProps) => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [lastAnalyzedPassword, setLastAnalyzedPassword] = useState<PasswordAnalysis | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -44,16 +45,32 @@ const PasswordChatbot = ({ currentAnalysis }: PasswordChatbotProps) => {
   // Effect to update chatbot when a new password is analyzed
   useEffect(() => {
     if (currentAnalysis && currentAnalysis.score !== undefined) {
-      // Only send an automatic message if this is a new password analysis
-      // and there's only the welcome message
-      if (messages.length === 1) {
-        const initialAdvice: Message = {
-          id: "initial-analysis",
-          content: `I notice you've entered a password. Would you like me to explain its strengths and weaknesses?`,
+      // Only add a message if this is a new or different password analysis
+      const isNewAnalysis = !lastAnalyzedPassword || 
+        JSON.stringify(lastAnalyzedPassword) !== JSON.stringify(currentAnalysis);
+      
+      if (isNewAnalysis) {
+        setLastAnalyzedPassword(currentAnalysis);
+        
+        // Determine the strength description based on score
+        let strengthDesc = "";
+        switch(currentAnalysis.score) {
+          case 0: strengthDesc = "very weak"; break;
+          case 1: strengthDesc = "weak"; break;
+          case 2: strengthDesc = "medium"; break;
+          case 3: strengthDesc = "strong"; break;
+          case 4: strengthDesc = "very strong"; break;
+        }
+        
+        // Add a message about the new password
+        const analysisMessage: Message = {
+          id: "password-analysis-" + Date.now(),
+          content: `I notice you've entered a new password that is ${strengthDesc}. Would you like me to analyze it and suggest improvements?`,
           isBot: true,
           timestamp: new Date(),
         };
-        setMessages(prev => [...prev, initialAdvice]);
+        
+        setMessages(prev => [...prev, analysisMessage]);
       }
     }
   }, [currentAnalysis]);
@@ -109,12 +126,25 @@ const PasswordChatbot = ({ currentAnalysis }: PasswordChatbotProps) => {
       
       console.log("Sending password stats:", passwordStats);
       
+      // Show typing indicator
+      const typingIndicator: Message = {
+        id: "typing-" + Date.now(),
+        content: "Thinking...",
+        isBot: true,
+        timestamp: new Date(),
+      };
+      
+      setMessages(prev => [...prev, typingIndicator]);
+      
       const { data, error } = await supabase.functions.invoke('password-security-chatbot', {
         body: { 
           message: cleanInput,
           passwordStats 
         },
       });
+
+      // Remove typing indicator
+      setMessages(prev => prev.filter(msg => msg.id !== typingIndicator.id));
 
       if (error) {
         console.error("Supabase function error:", error);
@@ -123,6 +153,10 @@ const PasswordChatbot = ({ currentAnalysis }: PasswordChatbotProps) => {
 
       if (!data) {
         throw new Error("No response data received from the chatbot");
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
       }
 
       // Add bot response
@@ -138,14 +172,17 @@ const PasswordChatbot = ({ currentAnalysis }: PasswordChatbotProps) => {
       console.error("Error sending message:", error);
       toast({
         title: "Error",
-        description: "Failed to get a response. Please try again.",
+        description: error.message || "Failed to get a response. Please try again.",
         variant: "destructive",
       });
+      
+      // Remove typing indicator if it exists
+      setMessages(prev => prev.filter(msg => !msg.id.startsWith("typing-")));
       
       // Add error message
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "I'm sorry, I encountered an error. Please try again or check if the API key is properly configured.",
+        content: "I'm sorry, I encountered an error. Please try again in a moment.",
         isBot: true,
         timestamp: new Date(),
       };
