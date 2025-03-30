@@ -21,7 +21,23 @@ serve(async (req) => {
       throw new Error("OPENAI_API_KEY is not set in environment variables");
     }
 
-    const { message, passwordStats } = await req.json();
+    const body = await req.json();
+    
+    // Input validation
+    if (!body || typeof body !== 'object') {
+      throw new Error("Invalid request body");
+    }
+    
+    const { message, passwordStats } = body;
+    
+    if (!message || typeof message !== 'string') {
+      throw new Error("Message is required and must be a string");
+    }
+    
+    // Validate message length to prevent abuse
+    if (message.length > 500) {
+      throw new Error("Message is too long (max 500 characters)");
+    }
 
     // Enhanced system prompt with more detailed RockYou dataset insights
     const systemPrompt = `You are an AI password security expert with extensive knowledge of the RockYou data breach containing 14,341,564 unique passwords. 
@@ -50,7 +66,10 @@ serve(async (req) => {
     3. Suggest concrete improvements with examples
     4. Relate advice to real-world breach statistics when relevant
     5. Be conversational but informative
-    6. If you see a vulnerability, always explain it in the context of how attackers would exploit it`;
+    6. If you see a vulnerability, always explain it in the context of how attackers would exploit it
+    7. Provide short, helpful responses - no more than 3-4 paragraphs maximum
+    8. Never respond with markdown formatting, HTML, or special formatting characters
+    9. Just answer in simple plain text as if having a natural conversation`;
 
     const userContext = passwordStats 
       ? `The user's current password has the following characteristics: ${JSON.stringify(passwordStats)}. 

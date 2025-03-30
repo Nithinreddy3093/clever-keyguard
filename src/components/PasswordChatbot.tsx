@@ -61,10 +61,21 @@ const PasswordChatbot = ({ currentAnalysis }: PasswordChatbotProps) => {
   const sendMessage = async () => {
     if (!input.trim()) return;
     
+    // Validate input to prevent sending large chunks of text or formatted content
+    const cleanInput = input.trim();
+    if (cleanInput.length > 500) {
+      toast({
+        title: "Message too long",
+        description: "Please keep your message under 500 characters.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
-      content: input,
+      content: cleanInput,
       isBot: false,
       timestamp: new Date(),
     };
@@ -100,7 +111,7 @@ const PasswordChatbot = ({ currentAnalysis }: PasswordChatbotProps) => {
       
       const { data, error } = await supabase.functions.invoke('password-security-chatbot', {
         body: { 
-          message: input,
+          message: cleanInput,
           passwordStats 
         },
       });

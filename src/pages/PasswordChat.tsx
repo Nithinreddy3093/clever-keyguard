@@ -2,12 +2,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Lock, Bot } from "lucide-react";
+import { ArrowLeft, Lock, Bot, Info } from "lucide-react";
 import PasswordChatbot from "@/components/PasswordChatbot";
 import { analyzePassword } from "@/lib/passwordAnalyzer";
 import PasswordInput from "@/components/PasswordInput";
 import StrengthMeter from "@/components/StrengthMeter";
 import { PasswordAnalysis } from "@/types/password";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const PasswordChat = () => {
   const [password, setPassword] = useState("");
@@ -67,6 +68,13 @@ const PasswordChat = () => {
                   <StrengthMeter score={analysis.score} />
                 </div>
               )}
+              
+              <Alert className="mt-4 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-900">
+                <Info className="h-4 w-4 text-blue-500" />
+                <AlertDescription className="text-xs text-blue-700 dark:text-blue-400">
+                  Try asking the AI assistant questions like "How can I create a stronger password?" or "Why are special characters important?"
+                </AlertDescription>
+              </Alert>
             </div>
           </div>
           
