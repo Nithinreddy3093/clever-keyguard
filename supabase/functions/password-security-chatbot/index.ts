@@ -17,6 +17,10 @@ serve(async (req) => {
   }
 
   try {
+    if (!OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY is not set in environment variables");
+    }
+
     const { message, passwordStats } = await req.json();
 
     // Enhanced system prompt with more detailed RockYou dataset insights
@@ -53,6 +57,9 @@ serve(async (req) => {
       Based on this analysis, identify specific vulnerabilities and suggest targeted improvements.`
       : "";
 
+    console.log("Sending request to OpenAI with API key:", OPENAI_API_KEY ? "API key is set" : "API key is NOT set");
+    console.log("Request details:", { hasMessage: !!message, hasPasswordStats: !!passwordStats });
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -69,6 +76,12 @@ serve(async (req) => {
         max_tokens: 800,
       }),
     });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("OpenAI API error response:", errorData);
+      throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`);
+    }
 
     const data = await response.json();
     

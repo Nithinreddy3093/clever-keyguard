@@ -110,6 +110,10 @@ const PasswordChatbot = ({ currentAnalysis }: PasswordChatbotProps) => {
         throw error;
       }
 
+      if (!data) {
+        throw new Error("No response data received from the chatbot");
+      }
+
       // Add bot response
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -130,7 +134,7 @@ const PasswordChatbot = ({ currentAnalysis }: PasswordChatbotProps) => {
       // Add error message
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "I'm sorry, I encountered an error. Please try again.",
+        content: "I'm sorry, I encountered an error. Please try again or check if the API key is properly configured.",
         isBot: true,
         timestamp: new Date(),
       };
