@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Lock, Bot } from "lucide-react";
 import PasswordChatbot from "@/components/PasswordChatbot";
 import { analyzePassword } from "@/lib/passwordAnalyzer";
-import { PasswordInput } from "@/components/PasswordInput";
+import PasswordInput from "@/components/PasswordInput";
 import StrengthMeter from "@/components/StrengthMeter";
 import { PasswordAnalysis } from "@/types/password";
 
