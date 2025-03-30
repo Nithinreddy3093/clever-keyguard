@@ -41,6 +41,23 @@ const PasswordChatbot = ({ currentAnalysis }: PasswordChatbotProps) => {
     scrollToBottom();
   }, [messages]);
 
+  // Effect to update chatbot when a new password is analyzed
+  useEffect(() => {
+    if (currentAnalysis && currentAnalysis.score !== undefined) {
+      // Only send an automatic message if this is a new password analysis
+      // and there's only the welcome message
+      if (messages.length === 1) {
+        const initialAdvice: Message = {
+          id: "initial-analysis",
+          content: `I notice you've entered a password. Would you like me to explain its strengths and weaknesses?`,
+          isBot: true,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, initialAdvice]);
+      }
+    }
+  }, [currentAnalysis]);
+
   const sendMessage = async () => {
     if (!input.trim()) return;
     
@@ -57,7 +74,7 @@ const PasswordChatbot = ({ currentAnalysis }: PasswordChatbotProps) => {
     setIsLoading(true);
     
     try {
-      // Prepare password stats for better context if available
+      // Prepare comprehensive password stats for better context if available
       const passwordStats = currentAnalysis ? {
         score: currentAnalysis.score,
         length: currentAnalysis.length,
@@ -68,7 +85,18 @@ const PasswordChatbot = ({ currentAnalysis }: PasswordChatbotProps) => {
         commonPatterns: currentAnalysis.commonPatterns,
         entropy: Math.round(currentAnalysis.entropy),
         timeToCrack: currentAnalysis.timeToCrack["Brute Force (Offline)"],
+        attackResistance: currentAnalysis.attackResistance,
+        hackabilityScore: currentAnalysis.hackabilityScore,
+        isCommon: currentAnalysis.isCommon,
+        hasCommonPattern: currentAnalysis.hasCommonPattern,
+        mlPatterns: currentAnalysis.mlPatterns.map(pattern => ({
+          type: pattern.type,
+          confidence: pattern.confidence,
+          description: pattern.description
+        }))
       } : null;
+      
+      console.log("Sending password stats:", passwordStats);
       
       const { data, error } = await supabase.functions.invoke('password-security-chatbot', {
         body: { 
@@ -77,7 +105,10 @@ const PasswordChatbot = ({ currentAnalysis }: PasswordChatbotProps) => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase function error:", error);
+        throw error;
+      }
 
       // Add bot response
       const botMessage: Message = {

@@ -1,4 +1,4 @@
 
-project_id = "project_id"
+project_id = "qrrtpqeqkstrokuswekv"
 app_version = "1"
-endpoint = "https://your-supabase-url.functions.supabase.co/password-security-chatbot"
+endpoint = "https://qrrtpqeqkstrokuswekv.supabase.co/functions/v1/password-security-chatbot"
