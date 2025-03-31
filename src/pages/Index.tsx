@@ -7,7 +7,7 @@ import PasswordInput from "@/components/PasswordInput";
 import StrengthMeter from "@/components/StrengthMeter";
 import PasswordFeedback from "@/components/PasswordFeedback";
 import SecurityTips from "@/components/SecurityTips";
-import { Shield, Lock, AlertTriangle, Save, Zap, KeyRound, Bot, Moon, Sun } from "lucide-react";
+import { Shield, Lock, AlertTriangle, Save, Zap, KeyRound, Bot, Moon, Sun, Sparkles } from "lucide-react";
 import { analyzePassword } from "@/lib/passwordAnalyzer";
 import { PasswordAnalysis } from "@/types/password";
 import { useAuth } from "@/contexts/AuthContext";
@@ -122,6 +122,12 @@ const Index = () => {
               <Link to="/passphrase" className="flex items-center">
                 <KeyRound className="mr-2 h-4 w-4" />
                 Generate Secure Passphrase
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="mx-2">
+              <Link to="/theme-passwords" className="flex items-center">
+                <Sparkles className="mr-2 h-4 w-4" />
+                Themed Password Generator
               </Link>
             </Button>
             <Button asChild variant="outline" className="mx-2">

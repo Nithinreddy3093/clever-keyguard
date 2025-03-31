@@ -19,13 +19,16 @@ type PasswordTheme = {
   emoji: string;
 };
 
+// Number of passwords to generate per theme
+const PASSWORDS_PER_THEME = 5;
+
 const ThemePasswordGenerator = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [selectedTheme, setSelectedTheme] = useState<string>("reverseGibberish");
-  const [generatedPassword, setGeneratedPassword] = useState<string>("");
-  const [copied, setCopied] = useState<boolean>(false);
-  const [passwordStrength, setPasswordStrength] = useState<number>(0);
+  const [generatedPasswords, setGeneratedPasswords] = useState<string[]>([]);
+  const [copied, setCopied] = useState<number | null>(null);
+  const [passwordStrengths, setPasswordStrengths] = useState<number[]>([]);
   const [currentThemeDescription, setCurrentThemeDescription] = useState<string>("");
 
   // Password theme options
@@ -102,9 +105,9 @@ const ThemePasswordGenerator = () => {
     }
   ];
 
-  // Generate password when theme changes
+  // Generate passwords when theme changes
   useEffect(() => {
-    handleGeneratePassword();
+    handleGeneratePasswords();
     // Update current theme description
     const theme = passwordThemes.find(theme => theme.id === selectedTheme);
     if (theme) {
@@ -112,16 +115,24 @@ const ThemePasswordGenerator = () => {
     }
   }, [selectedTheme]);
 
-  const handleGeneratePassword = () => {
-    const newPassword = generateThemedPassword(selectedTheme);
-    setGeneratedPassword(newPassword);
-    setPasswordStrength(calculatePasswordStrength(newPassword));
-    setCopied(false);
+  const handleGeneratePasswords = () => {
+    const newPasswords: string[] = [];
+    const newStrengths: number[] = [];
+    
+    for (let i = 0; i < PASSWORDS_PER_THEME; i++) {
+      const newPassword = generateThemedPassword(selectedTheme);
+      newPasswords.push(newPassword);
+      newStrengths.push(calculatePasswordStrength(newPassword));
+    }
+    
+    setGeneratedPasswords(newPasswords);
+    setPasswordStrengths(newStrengths);
+    setCopied(null);
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(generatedPassword);
-    setCopied(true);
+  const copyToClipboard = (text: string, index: number) => {
+    navigator.clipboard.writeText(text);
+    setCopied(index);
     toast({
       title: "Copied to clipboard",
       description: "The password has been copied to your clipboard",
@@ -129,11 +140,9 @@ const ThemePasswordGenerator = () => {
 
     // Reset the copied state after 2 seconds
     setTimeout(() => {
-      setCopied(false);
+      setCopied(null);
     }, 2000);
   };
-
-  const strengthInfo = getStrengthInfo(passwordStrength);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
@@ -191,10 +200,13 @@ const ThemePasswordGenerator = () => {
             </CardContent>
           </Card>
 
-          {/* Generated Password */}
+          {/* Generated Passwords */}
           <Card className="border-none shadow-lg">
             <CardHeader className="pb-3">
-              <CardTitle className="text-xl">Generated Password</CardTitle>
+              <CardTitle className="text-xl flex items-center gap-2">
+                <Wand2 className="h-5 w-5" />
+                Generated Passwords
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
@@ -202,39 +214,48 @@ const ThemePasswordGenerator = () => {
                   {currentThemeDescription}
                 </p>
                 
-                <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
-                  <div className="flex justify-between items-center mb-2">
-                    <p className="font-mono text-lg font-medium break-all">
-                      {generatedPassword}
-                    </p>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={copyToClipboard}
-                    >
-                      {copied ? (
-                        <Check className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className={`font-medium ${strengthInfo.color}`}>
-                      {strengthInfo.label}
-                    </span>
-                    <span className="text-slate-500 dark:text-slate-400">
-                      Strength: {passwordStrength}%
-                    </span>
-                  </div>
+                <div className="space-y-3">
+                  {generatedPasswords.map((password, index) => {
+                    const strength = passwordStrengths[index];
+                    const strengthInfo = getStrengthInfo(strength);
+                    
+                    return (
+                      <div key={index} className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
+                        <div className="flex justify-between items-center mb-2">
+                          <p className="font-mono text-lg font-medium break-all">
+                            {password}
+                          </p>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => copyToClipboard(password, index)}
+                          >
+                            {copied === index ? (
+                              <Check className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className={`font-medium ${strengthInfo.color}`}>
+                            {strengthInfo.label}
+                          </span>
+                          <span className="text-slate-500 dark:text-slate-400">
+                            Strength: {strength}%
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <Button 
                   className="w-full mt-4 flex items-center justify-center"
-                  onClick={handleGeneratePassword}
+                  onClick={handleGeneratePasswords}
                 >
                   <RefreshCw className="mr-2 h-4 w-4" />
-                  Generate New Password
+                  Generate New Passwords
                 </Button>
               </div>
 
