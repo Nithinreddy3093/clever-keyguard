@@ -132,10 +132,10 @@ export const generateInsultPasswords = (): string => {
 export const generateMovieQuoteRemix = (): string => {
   const quotes = [
     { quote: 'May The Force Be With You', key: 'MayTh3F0rc3' },
-    { quote: 'I'll Be Back', key: '1llB3B4ck' },
+    { quote: 'I\'ll Be Back', key: '1llB3B4ck' },
     { quote: 'Houston We Have A Problem', key: 'H0ust0nPr0bl3m' },
-    { quote: 'There's No Place Like Home', key: 'N0Pl4c3L1k3H0m3' },
-    { quote: 'You Can't Handle The Truth', key: 'C4ntH4ndl3Truth' },
+    { quote: 'There\'s No Place Like Home', key: 'N0Pl4c3L1k3H0m3' },
+    { quote: 'You Can\'t Handle The Truth', key: 'C4ntH4ndl3Truth' },
     { quote: 'Life Is Like A Box Of Chocolates', key: 'L1f3B0xCh0c0' },
     { quote: 'Say Hello To My Little Friend', key: 'H3ll0L1ttl3Fr13nd' },
     { quote: 'I Am Your Father', key: '1AmY0urF4th3r' }
@@ -172,9 +172,9 @@ export const generateKeyboardDance = (): string => {
   
   const pattern = patterns[getRandomInt(0, patterns.length - 1)];
   const numbers = `${getRandomInt(1, 9)}${getRandomInt(1, 9)}`;
-  const symbols = `${symbols[getRandomInt(0, symbols.length - 1)]}${symbols[getRandomInt(0, symbols.length - 1)]}`;
+  const symbolString = `${symbols[getRandomInt(0, symbols.length - 1)]}${symbols[getRandomInt(0, symbols.length - 1)]}`;
   
-  const parts = [pattern, numbers, symbols];
+  const parts = [pattern, numbers, symbolString];
   return shuffleArray(parts).join('');
 };
 
