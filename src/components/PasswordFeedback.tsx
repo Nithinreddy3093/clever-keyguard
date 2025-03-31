@@ -8,6 +8,9 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface PasswordFeedbackProps {
   analysis: PasswordAnalysis;
@@ -18,6 +21,7 @@ const PasswordFeedback = ({ analysis }: PasswordFeedbackProps) => {
   const [showAiEnhanced, setShowAiEnhanced] = useState(false);
   const [showPatternDetails, setShowPatternDetails] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     // Show suggestions after a short delay for better UX
@@ -42,10 +46,16 @@ const PasswordFeedback = ({ analysis }: PasswordFeedbackProps) => {
 
   const riskScore = calculateRiskScore();
 
+  // Function to toggle pattern details visibility
+  const togglePatternDetails = () => {
+    setShowPatternDetails(!showPatternDetails);
+    console.log("Pattern details toggled:", !showPatternDetails);
+  };
+
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-3 mb-4">
+        <TabsList className={cn("grid mb-4", isMobile ? "grid-cols-1 gap-2" : "grid-cols-3")}>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="ai-analysis">AI Analysis</TabsTrigger>
           <TabsTrigger value="suggestions">Suggestions</TabsTrigger>
@@ -109,7 +119,7 @@ const PasswordFeedback = ({ analysis }: PasswordFeedbackProps) => {
             </div>
           )}
 
-          {/* Attack Resistance Visualization (New) */}
+          {/* Attack Resistance Visualization */}
           <div className="mt-6">
             <h3 className="font-medium text-md mb-3 flex items-center">
               <Shield className="mr-2 h-4 w-4 text-blue-500" />
@@ -212,8 +222,9 @@ const PasswordFeedback = ({ analysis }: PasswordFeedbackProps) => {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={() => setShowPatternDetails(!showPatternDetails)}
+                  onClick={togglePatternDetails}
                   className="text-xs"
+                  type="button"
                 >
                   {showPatternDetails ? "Hide Details" : "Show Details"}
                 </Button>
@@ -242,30 +253,34 @@ const PasswordFeedback = ({ analysis }: PasswordFeedbackProps) => {
                 </CardContent>
               </Card>
               
-              <div className="grid grid-cols-1 gap-3">
-                {analysis.mlPatterns
-                  .sort((a, b) => b.confidence - a.confidence)
-                  .slice(0, showPatternDetails ? undefined : 3)
-                  .map((pattern, index) => (
-                    <div key={index} className="p-3 bg-purple-50 dark:bg-purple-950 border border-purple-100 dark:border-purple-900 rounded-md">
-                      <div className="flex items-start">
-                        <Badge variant="outline" className="bg-purple-100 dark:bg-purple-900 mr-2">
-                          {Math.round(pattern.confidence * 100)}%
-                        </Badge>
-                        <div>
-                          <h4 className="font-medium text-sm text-purple-800 dark:text-purple-300">{pattern.description}</h4>
-                          <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                            This pattern was found in many compromised passwords
-                          </p>
+              {/* Use Collapsible for the pattern details */}
+              <Collapsible open={showPatternDetails} onOpenChange={setShowPatternDetails} className="w-full">
+                <CollapsibleContent className="mt-3">
+                  <div className="grid grid-cols-1 gap-3">
+                    {analysis.mlPatterns
+                      .sort((a, b) => b.confidence - a.confidence)
+                      .map((pattern, index) => (
+                        <div key={index} className="p-3 bg-purple-50 dark:bg-purple-950 border border-purple-100 dark:border-purple-900 rounded-md">
+                          <div className="flex items-start">
+                            <Badge variant="outline" className="bg-purple-100 dark:bg-purple-900 mr-2">
+                              {Math.round(pattern.confidence * 100)}%
+                            </Badge>
+                            <div>
+                              <h4 className="font-medium text-sm text-purple-800 dark:text-purple-300">{pattern.description}</h4>
+                              <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                                This pattern was found in many compromised passwords
+                              </p>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  ))}
-              </div>
+                      ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </div>
           )}
 
-          {/* Hackability Score (New) */}
+          {/* Hackability Score */}
           <div className="mt-6">
             <h3 className="font-medium text-md mb-3 flex items-center">
               <Target className="mr-2 h-4 w-4 text-red-500" />
@@ -375,7 +390,7 @@ const PasswordFeedback = ({ analysis }: PasswordFeedbackProps) => {
         </TabsContent>
         
         <TabsContent value="suggestions" className="space-y-4">
-          {/* Generated Passphrases (New) */}
+          {/* Generated Passphrases */}
           <div className="mt-2">
             <h3 className="font-medium text-md mb-3 flex items-center">
               <RefreshCcw className="mr-2 h-4 w-4 text-green-500" />
