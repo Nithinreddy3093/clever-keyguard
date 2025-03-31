@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import PasswordInput from "@/components/PasswordInput";
 import StrengthMeter from "@/components/StrengthMeter";
 import PasswordFeedback from "@/components/PasswordFeedback";
 import SecurityTips from "@/components/SecurityTips";
-import { Shield, Lock, AlertTriangle, Save, Zap, KeyRound, Bot } from "lucide-react";
+import { Shield, Lock, AlertTriangle, Save, Zap, KeyRound, Bot, Moon, Sun } from "lucide-react";
 import { analyzePassword } from "@/lib/passwordAnalyzer";
 import { PasswordAnalysis } from "@/types/password";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +21,24 @@ const Index = () => {
   const [analysis, setAnalysis] = useState<PasswordAnalysis | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    // Check for saved preference or use system preference
+    const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
+    if (savedTheme) return savedTheme;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  });
+
+  // Apply theme changes
+  useEffect(() => {
+    const root = window.document.documentElement;
+    root.classList.remove("light", "dark");
+    root.classList.add(theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prevTheme => prevTheme === "light" ? "dark" : "light");
+  };
 
   const handlePasswordChange = (value: string) => {
     setPassword(value);
@@ -73,8 +92,21 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 transition-colors duration-300">
       <div className="container max-w-4xl py-12 px-4 sm:px-6">
+        <div className="flex justify-end mb-4">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={toggleTheme}
+            className="flex items-center gap-1"
+            aria-label="Toggle theme"
+          >
+            {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+            <span className="hidden sm:inline">{theme === "light" ? "Dark Mode" : "Light Mode"}</span>
+          </Button>
+        </div>
+        
         <header className="text-center mb-12">
           <div className="flex justify-center mb-4">
             <Shield className="h-16 w-16 text-primary" />
@@ -101,9 +133,9 @@ const Index = () => {
           </div>
         </header>
 
-        <Card className="mb-8 border-none shadow-lg">
+        <Card className="mb-8 border-none shadow-lg bg-white dark:bg-slate-800 transition-colors duration-300">
           <CardHeader className="pb-3">
-            <CardTitle className="text-xl flex items-center">
+            <CardTitle className="text-xl flex items-center text-slate-900 dark:text-white">
               <Lock className="mr-2 h-5 w-5 text-primary" />
               Check Your Password
             </CardTitle>
@@ -119,7 +151,7 @@ const Index = () => {
                     <div className="mb-4 flex items-center justify-between">
                       <div className="flex items-center">
                         <Zap className="mr-2 h-4 w-4 text-amber-500" />
-                        <span className="text-sm font-medium mr-2">Hackability Risk:</span>
+                        <span className="text-sm font-medium mr-2 text-slate-700 dark:text-slate-300">Hackability Risk:</span>
                         <span className={`text-sm font-semibold ${
                           analysis.hackabilityScore.riskLevel === 'critical' ? 'text-red-500' :
                           analysis.hackabilityScore.riskLevel === 'high' ? 'text-orange-500' :
@@ -129,7 +161,7 @@ const Index = () => {
                           {analysis.hackabilityScore.riskLevel.charAt(0).toUpperCase() + analysis.hackabilityScore.riskLevel.slice(1)}
                         </span>
                       </div>
-                      <span className="text-sm font-semibold">
+                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                         {analysis.hackabilityScore.timeToHack} to crack
                       </span>
                     </div>
@@ -155,9 +187,9 @@ const Index = () => {
 
         {analysis && (
           <>
-            <Card className="mb-8 border-none shadow-lg">
+            <Card className="mb-8 border-none shadow-lg bg-white dark:bg-slate-800 transition-colors duration-300">
               <CardHeader className="pb-3">
-                <CardTitle className="text-xl flex items-center">
+                <CardTitle className="text-xl flex items-center text-slate-900 dark:text-white">
                   <AlertTriangle className="mr-2 h-5 w-5 text-amber-500" />
                   Password Analysis
                 </CardTitle>
@@ -171,7 +203,7 @@ const Index = () => {
           </>
         )}
         
-        <footer className="text-center mt-12 text-sm text-slate-500 dark:text-slate-400">
+        <footer className="text-center mt-12 text-sm text-slate-500 dark:text-slate-400 transition-colors duration-300">
           <p>All analysis is performed locally. Your passwords are never sent to any server.</p>
           {user ? (
             <p className="mt-1">Saved analyses only store password characteristics, never the actual password.</p>

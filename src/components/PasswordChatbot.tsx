@@ -7,6 +7,7 @@ import { Bot, User, Send, ArrowDown, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { PasswordAnalysis } from "@/types/password";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Message {
   id: string;
@@ -35,6 +36,7 @@ const PasswordChatbot = ({ currentAnalysis }: PasswordChatbotProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [lastAnalyzedPassword, setLastAnalyzedPassword] = useState<PasswordAnalysis | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsMobile();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -46,11 +48,10 @@ const PasswordChatbot = ({ currentAnalysis }: PasswordChatbotProps) => {
 
   // Auto-focus input field on mobile
   useEffect(() => {
-    const isMobile = window.innerWidth < 768;
     if (!isMobile && inputRef.current) {
       inputRef.current.focus();
     }
-  }, []);
+  }, [isMobile]);
 
   // Effect to update chatbot when a new password is analyzed
   useEffect(() => {
