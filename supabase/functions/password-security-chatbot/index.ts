@@ -39,25 +39,27 @@ serve(async (req) => {
       throw new Error("Message is too long (max 500 characters)");
     }
 
-    // Improved system prompt for more natural, conversational responses
+    // Enhanced system prompt for more dynamic, personalized responses
     const systemPrompt = `You are a friendly and helpful AI password security assistant with knowledge about password security best practices and the RockYou data breach containing 14+ million leaked passwords.
 
-    When responding to users:
-    1. Be conversational and personable - talk like a helpful friend, not a formal document
-    2. Respond directly to the user's specific question first, then provide additional context if needed
-    3. If the user asks about their current password, refer to the passwordStats provided
-    4. Keep responses concise (2-3 paragraphs maximum)
-    5. Use simple, plain language without any markdown formatting
-    6. If suggesting passwords, provide 1-2 concrete examples that follow best practices
-    7. If the user is confused or asks an unclear question, ask for clarification
-    8. Always prioritize the user's specific question over giving generic advice
+    As a password security expert:
+    1. Be conversational, friendly, and adapt your tone to the user's query
+    2. Always provide unique and varied responses to similar questions - never repeat the exact same advice
+    3. When discussing a user's password, carefully analyze the provided passwordStats and tailor your feedback
+    4. Generate creative, secure password examples when asked, making each suggestion unique
+    5. If the user asks for themed passwords (e.g., related to sports, animals, etc.), create creative examples
+    6. Explain complex security concepts in simple terms with relevant analogies
+    7. Avoid technical jargon unless specifically asked for expert-level information
+    8. Respond with humor and personality when appropriate but stay professional
 
-    Important RockYou breach facts you can reference when relevant:
-    - The most common passwords were "123456", "12345", "123456789", "password", and "iloveyou"
-    - 40.3% of passwords were purely lowercase letters
+    Important facts about password security to reference:
+    - The most common passwords in the RockYou breach were "123456", "password", "qwerty", "abc123", and "iloveyou"
+    - 40.3% of RockYou passwords were purely lowercase letters
     - Only 3.8% used special characters
     - 59.7% were 8 characters or less
-    - Less than 4% were 12+ characters long`;
+    - Less than 4% were 12+ characters long
+    - Passwords with personal information are highly vulnerable to targeted attacks
+    - Modern password cracking hardware can attempt billions of combinations per second`;
 
     // Create more personalized user context based on password analysis
     const userContext = passwordStats 
@@ -69,8 +71,16 @@ serve(async (req) => {
       - Contains special characters: ${passwordStats.hasSpecial ? 'Yes' : 'No'}
       - Password strength score: ${passwordStats.score}/4
       - Estimated time to crack: ${passwordStats.timeToCrack["Brute Force (Offline)"]}
+      - Hackability score: ${passwordStats.hackabilityScore ? passwordStats.hackabilityScore.score : 'Not available'}/100
+      - Risk level: ${passwordStats.hackabilityScore ? passwordStats.hackabilityScore.riskLevel : 'Not available'}
       
-      When answering, refer to these specifics where relevant, and address any issues with their current password.`
+      Attack resistance scores:
+      - Brute Force: ${passwordStats.attackResistance ? passwordStats.attackResistance.bruteForce : 'N/A'}/100
+      - Dictionary: ${passwordStats.attackResistance ? passwordStats.attackResistance.dictionary : 'N/A'}/100
+      - Pattern-Based: ${passwordStats.attackResistance ? passwordStats.attackResistance.patternBased : 'N/A'}/100
+      - AI Attack: ${passwordStats.attackResistance ? passwordStats.attackResistance.aiAttack : 'N/A'}/100
+      
+      When answering, refer to these specifics and address any issues with their current password.`
       : "The user hasn't provided a password for analysis yet.";
 
     console.log("Sending request to OpenAI with API key:", OPENAI_API_KEY ? "API key is set" : "API key is NOT set");
@@ -88,7 +98,7 @@ serve(async (req) => {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userContext + "\n\n" + message }
         ],
-        temperature: 0.7,
+        temperature: 0.8, // Increased for more varied responses
         max_tokens: 800,
       }),
     });
