@@ -12,6 +12,7 @@ import Auth from "./pages/Auth";
 import History from "./pages/History";
 import PassphraseGenerator from "./pages/PassphraseGenerator";
 import PasswordChat from "./pages/PasswordChat";
+import ThemePasswordGenerator from "./pages/ThemePasswordGenerator";
 import NotFound from "./pages/NotFound";
 
 // Create a new QueryClient instance
@@ -33,6 +34,7 @@ const App = () => (
                 <Route path="/history" element={<History />} />
                 <Route path="/passphrase" element={<PassphraseGenerator />} />
                 <Route path="/chat" element={<PasswordChat />} />
+                <Route path="/theme-passwords" element={<ThemePasswordGenerator />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
