@@ -7,7 +7,10 @@ import PasswordInput from "@/components/PasswordInput";
 import StrengthMeter from "@/components/StrengthMeter";
 import PasswordFeedback from "@/components/PasswordFeedback";
 import SecurityTips from "@/components/SecurityTips";
-import { Shield, Lock, AlertTriangle, Save, Zap, KeyRound, Bot, Moon, Sun, Sparkles } from "lucide-react";
+import { 
+  Shield, Lock, AlertTriangle, Save, Zap, KeyRound, Bot, 
+  Moon, Sun, Sparkles, Trophy, RadioTower, Sidebar
+} from "lucide-react";
 import { analyzePassword } from "@/lib/passwordAnalyzer";
 import { PasswordAnalysis } from "@/types/password";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import crypto from "crypto-js";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 const Index = () => {
   const [password, setPassword] = useState("");
@@ -94,7 +98,20 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 transition-colors duration-300">
       <div className="container max-w-4xl py-12 px-4 sm:px-6">
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-between mb-4">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-1"
+          >
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="sm" className="flex items-center gap-1">
+                <Sidebar className="h-4 w-4" />
+                <span className="hidden sm:inline">Features</span>
+              </Button>
+            </SheetTrigger>
+          </Button>
+          
           <Button 
             variant="ghost" 
             size="sm" 
@@ -128,6 +145,18 @@ const Index = () => {
               <Link to="/theme-passwords" className="flex items-center">
                 <Sparkles className="mr-2 h-4 w-4" />
                 Themed Password Generator
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="mx-2">
+              <Link to="/rankings" className="flex items-center">
+                <Trophy className="mr-2 h-4 w-4" />
+                Shadow Tier Rankings
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="mx-2">
+              <Link to="/service-passwords" className="flex items-center">
+                <RadioTower className="mr-2 h-4 w-4" />
+                Service Passwords
               </Link>
             </Button>
             <Button asChild variant="outline" className="mx-2">
@@ -208,6 +237,102 @@ const Index = () => {
             <SecurityTips />
           </>
         )}
+        
+        {/* Sidebar Sheet */}
+        <Sheet>
+          <SheetContent side="right" className="w-full sm:w-80 overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Password Security Features</SheetTitle>
+            </SheetHeader>
+            <div className="mt-6 space-y-4">
+              <div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg">
+                <Link to="/passphrase" className="flex flex-col">
+                  <span className="text-lg font-medium flex items-center">
+                    <KeyRound className="mr-2 h-5 w-5 text-primary" />
+                    Secure Passphrase Generator
+                  </span>
+                  <span className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                    Generate easy-to-remember yet secure passphrases
+                  </span>
+                </Link>
+              </div>
+              
+              <div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg">
+                <Link to="/theme-passwords" className="flex flex-col">
+                  <span className="text-lg font-medium flex items-center">
+                    <Sparkles className="mr-2 h-5 w-5 text-primary" />
+                    Themed Password Generator
+                  </span>
+                  <span className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                    Create fun, unique passwords with various themes
+                  </span>
+                </Link>
+              </div>
+              
+              <div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg">
+                <Link to="/rankings" className="flex flex-col">
+                  <span className="text-lg font-medium flex items-center">
+                    <Trophy className="mr-2 h-5 w-5 text-primary" />
+                    Shadow Tier Rankings
+                  </span>
+                  <span className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                    Compete with others for the highest password security rank
+                  </span>
+                </Link>
+              </div>
+              
+              <div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg">
+                <Link to="/service-passwords" className="flex flex-col">
+                  <span className="text-lg font-medium flex items-center">
+                    <RadioTower className="mr-2 h-5 w-5 text-primary" />
+                    Service-Specific Passwords
+                  </span>
+                  <span className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                    Generate customized passwords for popular online services
+                  </span>
+                </Link>
+              </div>
+              
+              <div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg">
+                <Link to="/chat" className="flex flex-col">
+                  <span className="text-lg font-medium flex items-center">
+                    <Bot className="mr-2 h-5 w-5 text-primary" />
+                    AI Security Assistant
+                  </span>
+                  <span className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                    Chat with our AI to get personalized security advice
+                  </span>
+                </Link>
+              </div>
+              
+              {user ? (
+                <div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg">
+                  <Link to="/history" className="flex flex-col">
+                    <span className="text-lg font-medium flex items-center">
+                      <Lock className="mr-2 h-5 w-5 text-primary" />
+                      Password History
+                    </span>
+                    <span className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                      View your password analysis history
+                    </span>
+                  </Link>
+                </div>
+              ) : (
+                <div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg">
+                  <Link to="/auth" className="flex flex-col">
+                    <span className="text-lg font-medium flex items-center">
+                      <Lock className="mr-2 h-5 w-5 text-primary" />
+                      Sign In / Register
+                    </span>
+                    <span className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                      Create an account to save your password analyses
+                    </span>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
         
         <footer className="text-center mt-12 text-sm text-slate-500 dark:text-slate-400 transition-colors duration-300">
           <p>All analysis is performed locally. Your passwords are never sent to any server.</p>
