@@ -21,6 +21,7 @@ export type Database = {
           id: string
           is_common: boolean
           length: number
+          metadata: Json | null
           password_hash: string
           score: number
           user_id: string | null
@@ -36,6 +37,7 @@ export type Database = {
           id?: string
           is_common: boolean
           length: number
+          metadata?: Json | null
           password_hash: string
           score: number
           user_id?: string | null
@@ -51,6 +53,7 @@ export type Database = {
           id?: string
           is_common?: boolean
           length?: number
+          metadata?: Json | null
           password_hash?: string
           score?: number
           user_id?: string | null

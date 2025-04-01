@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -110,7 +109,17 @@ const PasswordRankings = () => {
         .from("password_history")
         .select("user_id, score, metadata");
 
-      if (passwordError) throw passwordError;
+      if (passwordError) {
+        console.error("Error fetching password data:", passwordError);
+        throw passwordError;
+      }
+
+      if (!passwordData) {
+        console.log("No password data found");
+        setRankings([]);
+        setLoading(false);
+        return;
+      }
 
       // Process the rankings
       const userScores: Record<string, { scores: number[], displayName: string }> = {};
