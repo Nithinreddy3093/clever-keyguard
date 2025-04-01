@@ -12,8 +12,7 @@ type RankTier = "S" | "A" | "B" | "C" | "D" | "E";
 
 interface UserRanking {
   userId: string;
-  email: string;
-  displayName?: string;
+  displayName: string;
   score: number;
   tier: RankTier;
   rank: number;
@@ -63,19 +62,12 @@ const PasswordRankings = () => {
     const fetchRankings = async () => {
       setLoading(true);
       try {
-        // First get all password scores
+        // Get password history data which includes user_id and scores
         const { data: passwordData, error: passwordError } = await supabase
           .from("password_history")
           .select("user_id, score");
 
         if (passwordError) throw passwordError;
-
-        // Get users separately
-        const { data: userData, error: userError } = await supabase
-          .from("users")
-          .select("id, email");
-
-        if (userError) throw userError;
 
         // Process the rankings
         const userScores: Record<string, number[]> = {};
@@ -94,18 +86,18 @@ const PasswordRankings = () => {
         Object.entries(userScores).forEach(([userId, scores]) => {
           // Find the max score for each user
           const maxScore = Math.max(...scores);
-          const user = userData.find(u => u.id === userId);
           
-          if (user) {
-            rankingsData.push({
-              userId,
-              email: user.email || "Anonymous",
-              score: maxScore,
-              tier: getTierForScore(maxScore),
-              rank: 0, // Will be calculated later
-              change: "same" // Default value
-            });
-          }
+          // Generate an anonymous display name based on user ID
+          const displayName = userId ? `User ${userId.substring(0, 4)}` : "Anonymous";
+          
+          rankingsData.push({
+            userId,
+            displayName,
+            score: maxScore,
+            tier: getTierForScore(maxScore),
+            rank: 0, // Will be calculated later
+            change: "same" // Default value
+          });
         });
         
         // Sort by score descending
@@ -174,7 +166,7 @@ const PasswordRankings = () => {
                     </Badge>
                   </div>
                   <div className="ml-4">
-                    <p className="font-semibold text-slate-900 dark:text-white">{userRank.email}</p>
+                    <p className="font-semibold text-slate-900 dark:text-white">You</p>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
                       {getTierName(userRank.tier)}
                     </p>
@@ -234,7 +226,7 @@ const PasswordRankings = () => {
                               ) : (
                                 <span className="flex items-center">
                                   <User className="h-3 w-3 mr-1" />
-                                  {ranking.email.split("@")[0]}
+                                  {ranking.displayName}
                                 </span>
                               )}
                             </p>
