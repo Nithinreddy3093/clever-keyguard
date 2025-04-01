@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -126,6 +127,8 @@ const PasswordRankings = () => {
       
       // Group scores by user
       passwordData.forEach((entry) => {
+        if (!entry.user_id) return; // Skip entries without user_id
+        
         if (!userScores[entry.user_id]) {
           userScores[entry.user_id] = {
             scores: [],
