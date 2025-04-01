@@ -1,293 +1,337 @@
 
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Trophy, ArrowLeft, Crown, Star } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Shield, Trophy, ArrowUp, ArrowDown, Minus, User } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-type RankingData = {
-  user_email: string;
-  avg_score: number;
-  password_count: number;
-  highest_score: number;
-  rank: string;
+// Define types for user ranking data
+type RankTier = "S" | "A" | "B" | "C" | "D" | "E";
+
+interface UserRanking {
+  userId: string;
+  email: string;
+  displayName?: string;
+  score: number;
+  tier: RankTier;
+  rank: number;
+  change?: "up" | "down" | "same";
+}
+
+const getTierForScore = (score: number): RankTier => {
+  if (score >= 90) return "S";
+  if (score >= 80) return "A";
+  if (score >= 65) return "B";
+  if (score >= 50) return "C";
+  if (score >= 35) return "D";
+  return "E";
+};
+
+const getTierName = (tier: RankTier): string => {
+  const names: Record<RankTier, string> = {
+    "S": "Shadow Sovereign",
+    "A": "Nightmare King/Queen",
+    "B": "Abyssal Phantom",
+    "C": "Eclipsed Knight",
+    "D": "Void Walker", 
+    "E": "Shadow Novice"
+  };
+  return names[tier];
+};
+
+const getTierColor = (tier: RankTier): string => {
+  const colors: Record<RankTier, string> = {
+    "S": "bg-purple-600 hover:bg-purple-700",
+    "A": "bg-indigo-600 hover:bg-indigo-700",
+    "B": "bg-blue-600 hover:bg-blue-700",
+    "C": "bg-green-600 hover:bg-green-700",
+    "D": "bg-yellow-600 hover:bg-yellow-700",
+    "E": "bg-red-600 hover:bg-red-700"
+  };
+  return colors[tier];
 };
 
 const PasswordRankings = () => {
-  const [rankings, setRankings] = useState<RankingData[]>([]);
-  const [userRank, setUserRank] = useState<RankingData | null>(null);
+  const [rankings, setRankings] = useState<UserRanking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
   const { user } = useAuth();
-  
-  // Function to determine rank based on score
-  const determineRank = (score: number): string => {
-    if (score >= 95) return "S";
-    if (score >= 85) return "A";
-    if (score >= 70) return "B";
-    if (score >= 50) return "C";
-    if (score >= 30) return "D";
-    return "E";
-  };
-  
-  // Get the display name based on rank
-  const getRankDisplayName = (rank: string): string => {
-    switch (rank) {
-      case "S": return "Shadow Sovereign";
-      case "A": return "Nightmare King/Queen";
-      case "B": return "Abyssal Phantom";
-      case "C": return "Eclipsed Knight";
-      case "D": return "Void Walker";
-      case "E": return "Shadow Novice";
-      default: return "";
-    }
-  };
-  
+
   useEffect(() => {
     const fetchRankings = async () => {
+      setLoading(true);
       try {
-        // Fetch password history data grouped by user
-        const { data, error } = await supabase
-          .from('password_history')
-          .select('user_id, score')
-          .order('created_at', { ascending: false });
-          
-        if (error) throw error;
+        // First get all password scores
+        const { data: passwordData, error: passwordError } = await supabase
+          .from("password_history")
+          .select("user_id, score");
+
+        if (passwordError) throw passwordError;
+
+        // Get users separately
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("id, email");
+
+        if (userError) throw userError;
+
+        // Process the rankings
+        const userScores: Record<string, number[]> = {};
         
-        if (data) {
-          // Process the data to create rankings
-          const userScores: Record<string, number[]> = {};
-          
-          // Group scores by user_id
-          data.forEach(item => {
-            if (!userScores[item.user_id]) {
-              userScores[item.user_id] = [];
-            }
-            userScores[item.user_id].push(item.score);
-          });
-          
-          // Get user details for each user_id
-          const userRankings: RankingData[] = [];
-          
-          for (const [userId, scores] of Object.entries(userScores)) {
-            // Fetch user email
-            const { data: userData } = await supabase
-              .from('auth')
-              .select('email')
-              .eq('id', userId)
-              .single();
-              
-            const avgScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-            const highestScore = Math.max(...scores);
-            
-            userRankings.push({
-              user_email: userData?.email || `User-${userId.slice(0, 6)}`,
-              avg_score: parseFloat(avgScore.toFixed(2)),
-              password_count: scores.length,
-              highest_score: highestScore,
-              rank: determineRank(avgScore)
-            });
-            
-            // If this is the current user, set their rank
-            if (user && userId === user.id) {
-              setUserRank({
-                user_email: userData?.email || `User-${userId.slice(0, 6)}`,
-                avg_score: parseFloat(avgScore.toFixed(2)),
-                password_count: scores.length,
-                highest_score: highestScore,
-                rank: determineRank(avgScore)
-              });
-            }
+        // Group scores by user
+        passwordData.forEach((entry) => {
+          if (!userScores[entry.user_id]) {
+            userScores[entry.user_id] = [];
           }
+          userScores[entry.user_id].push(entry.score);
+        });
+        
+        // Calculate average scores and create rankings
+        const rankingsData: UserRanking[] = [];
+        
+        Object.entries(userScores).forEach(([userId, scores]) => {
+          // Find the max score for each user
+          const maxScore = Math.max(...scores);
+          const user = userData.find(u => u.id === userId);
           
-          // Sort by average score in descending order
-          userRankings.sort((a, b) => b.avg_score - a.avg_score);
-          
-          setRankings(userRankings);
-        }
-      } catch (error) {
+          if (user) {
+            rankingsData.push({
+              userId,
+              email: user.email || "Anonymous",
+              score: maxScore,
+              tier: getTierForScore(maxScore),
+              rank: 0, // Will be calculated later
+              change: "same" // Default value
+            });
+          }
+        });
+        
+        // Sort by score descending
+        rankingsData.sort((a, b) => b.score - a.score);
+        
+        // Assign ranks
+        rankingsData.forEach((ranking, index) => {
+          ranking.rank = index + 1;
+        });
+        
+        setRankings(rankingsData);
+      } catch (error: any) {
         console.error("Error fetching rankings:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load rankings data",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
     };
-    
+
     fetchRankings();
-  }, [user]);
-  
-  // Rank color based on rank
-  const getRankColor = (rank: string): string => {
-    switch (rank) {
-      case "S": return "text-purple-600 dark:text-purple-400";
-      case "A": return "text-emerald-600 dark:text-emerald-400";
-      case "B": return "text-blue-600 dark:text-blue-400";
-      case "C": return "text-yellow-600 dark:text-yellow-400";
-      case "D": return "text-orange-600 dark:text-orange-400";
-      case "E": return "text-red-600 dark:text-red-400";
-      default: return "text-gray-600 dark:text-gray-400";
-    }
+  }, [toast]);
+
+  const getUserRank = () => {
+    if (!user) return null;
+    return rankings.find(r => r.userId === user.id);
   };
-  
-  // Icon based on rank
-  const getRankIcon = (rank: string) => {
-    switch (rank) {
-      case "S": return <Crown className="h-5 w-5 text-purple-600 dark:text-purple-400" />;
-      case "A": return <Trophy className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />;
-      case "B": return <Star className="h-5 w-5 text-blue-600 dark:text-blue-400" />;
-      case "C": return <Star className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />;
-      case "D": return <Star className="h-5 w-5 text-orange-600 dark:text-orange-400" />;
-      case "E": return <Star className="h-5 w-5 text-red-600 dark:text-red-400" />;
-      default: return null;
-    }
-  };
+
+  const userRank = getUserRank();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-      <div className="container max-w-4xl py-12 px-4">
-        <div className="mb-8 flex items-center">
-          <Button asChild variant="outline" className="mr-4">
-            <Link to="/">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Home
-            </Link>
-          </Button>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+      <div className="container max-w-4xl py-12 px-4 sm:px-6">
+        <header className="text-center mb-12">
+          <div className="flex justify-center mb-4">
+            <Trophy className="h-16 w-16 text-amber-500" />
+          </div>
+          <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white mb-3">
             Shadow Tier Rankings
           </h1>
-        </div>
-        
-        <div className="flex justify-center mb-8">
-          <Shield className="h-12 w-12 text-primary" />
-        </div>
-        
+          <p className="text-xl text-slate-600 dark:text-slate-300">
+            See how your password strength compares to others
+          </p>
+        </header>
+
         {userRank && (
-          <Card className="mb-8 border-none shadow-lg bg-white dark:bg-slate-800 transition-colors duration-300">
+          <Card className="mb-8 border-none shadow-lg bg-white dark:bg-slate-800">
             <CardHeader className="pb-3">
               <CardTitle className="text-xl flex items-center text-slate-900 dark:text-white">
-                Your Shadow Rank
+                <Shield className="mr-2 h-5 w-5 text-primary" />
+                Your Ranking
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
                 <div className="flex items-center">
-                  <span className={`text-2xl font-bold mr-2 ${getRankColor(userRank.rank)}`}>
-                    {userRank.rank}-Rank
-                  </span>
-                  {getRankIcon(userRank.rank)}
-                  <span className="text-slate-600 dark:text-slate-300 ml-3">
-                    {getRankDisplayName(userRank.rank)}
-                  </span>
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center text-lg font-bold">
+                      {userRank.rank}
+                    </div>
+                    <Badge className={`absolute -top-2 -right-2 ${getTierColor(userRank.tier)}`}>
+                      {userRank.tier}
+                    </Badge>
+                  </div>
+                  <div className="ml-4">
+                    <p className="font-semibold text-slate-900 dark:text-white">{userRank.email}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      {getTierName(userRank.tier)}
+                    </p>
+                  </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-slate-600 dark:text-slate-300">Average Score: <span className="font-semibold">{userRank.avg_score}</span></div>
-                  <div className="text-slate-600 dark:text-slate-300">Passwords Analyzed: <span className="font-semibold">{userRank.password_count}</span></div>
+                  <p className="text-2xl font-bold text-primary">{userRank.score}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Password Strength</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
-        
-        <Card className="border-none shadow-lg bg-white dark:bg-slate-800 transition-colors duration-300">
+
+        <Card className="border-none shadow-lg bg-white dark:bg-slate-800">
           <CardHeader className="pb-3">
             <CardTitle className="text-xl flex items-center text-slate-900 dark:text-white">
-              <Trophy className="mr-2 h-5 w-5 text-primary" />
-              Leaderboard
+              <Trophy className="mr-2 h-5 w-5 text-amber-500" />
+              Global Rankings
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {rankings.length > 0 ? (
-              <div className="space-y-4">
-                {rankings.map((rank, index) => (
-                  <div 
-                    key={index}
-                    className={`flex items-center justify-between p-3 rounded-md ${
-                      user && rank.user_email === (user.email || '') 
-                        ? 'bg-primary/10 dark:bg-primary/20' 
-                        : 'bg-slate-50 dark:bg-slate-700'
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      <span className="text-xl font-bold mr-3 w-6 text-center text-slate-700 dark:text-slate-300">
-                        {index + 1}
-                      </span>
-                      <div>
-                        <div className="flex items-center">
-                          <span className={`font-semibold mr-2 ${getRankColor(rank.rank)}`}>
-                            {rank.rank}-Rank
-                          </span>
-                          {getRankIcon(rank.rank)}
-                        </div>
-                        <div className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                          {rank.user_email.split('@')[0]}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-slate-700 dark:text-slate-300">
-                        <span className="font-semibold">{rank.avg_score}</span> avg score
-                      </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">
-                        {rank.password_count} passwords
-                      </div>
-                    </div>
-                  </div>
-                ))}
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
               </div>
             ) : (
-              <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                No rankings available yet. Start analyzing passwords to earn your rank!
+              <div className="space-y-4">
+                {rankings.length === 0 ? (
+                  <p className="text-center py-8 text-slate-500 dark:text-slate-400">
+                    No rankings data available yet. Be the first to submit a password!
+                  </p>
+                ) : (
+                  rankings.map((ranking, index) => (
+                    <div 
+                      key={ranking.userId}
+                      className={`flex items-center justify-between p-4 rounded-lg ${
+                        ranking.userId === user?.id 
+                          ? "bg-primary/10 dark:bg-primary/20" 
+                          : "bg-slate-50 dark:bg-slate-700"
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <div className="relative">
+                          <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center font-bold">
+                            {ranking.rank}
+                          </div>
+                          <Badge className={`absolute -top-2 -right-2 ${getTierColor(ranking.tier)}`}>
+                            {ranking.tier}
+                          </Badge>
+                        </div>
+                        <div className="ml-4">
+                          <div className="flex items-center">
+                            <p className="font-semibold text-slate-900 dark:text-white">
+                              {ranking.userId === user?.id ? (
+                                <span>You</span>
+                              ) : (
+                                <span className="flex items-center">
+                                  <User className="h-3 w-3 mr-1" />
+                                  {ranking.email.split("@")[0]}
+                                </span>
+                              )}
+                            </p>
+                            {ranking.change === "up" && (
+                              <ArrowUp className="ml-2 h-4 w-4 text-green-500" />
+                            )}
+                            {ranking.change === "down" && (
+                              <ArrowDown className="ml-2 h-4 w-4 text-red-500" />
+                            )}
+                            {ranking.change === "same" && (
+                              <Minus className="ml-2 h-4 w-4 text-slate-400" />
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            {getTierName(ranking.tier)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-primary">{ranking.score}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Password Strength</p>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </CardContent>
         </Card>
-        
-        <div className="mt-8 space-y-6 bg-white dark:bg-slate-800 shadow-lg rounded-lg p-6">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Shadow Tier Ranking System</h2>
-          
+
+        <div className="mt-12 p-6 bg-white dark:bg-slate-800 rounded-lg shadow-lg">
+          <h2 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white">
+            Shadow Tier System
+          </h2>
           <div className="space-y-4">
-            <div className="flex items-start">
-              <span className={`text-xl font-bold mr-3 ${getRankColor("S")}`}>S-Rank</span>
-              <div>
-                <div className="font-semibold text-slate-800 dark:text-slate-200">Shadow Sovereign</div>
-                <p className="text-slate-600 dark:text-slate-400">A password that is virtually impossible to crack. It's long, complex, contains a mix of upper/lowercase letters, numbers, special characters, and is not found in any dictionary.</p>
+            <div className="flex items-start p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+              <Badge className={getTierColor("S")}>S</Badge>
+              <div className="ml-4">
+                <p className="font-bold text-slate-900 dark:text-white">Shadow Sovereign (90-100)</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  A password that is virtually impossible to crack. It's long, complex, contains a mix of
+                  upper/lowercase letters, numbers, special characters, and is not found in any dictionary.
+                </p>
               </div>
             </div>
             
-            <div className="flex items-start">
-              <span className={`text-xl font-bold mr-3 ${getRankColor("A")}`}>A-Rank</span>
-              <div>
-                <div className="font-semibold text-slate-800 dark:text-slate-200">Nightmare King/Queen</div>
-                <p className="text-slate-600 dark:text-slate-400">A robust password that uses a combination of letters, numbers, and special characters, but may be a little shorter than the "S-Rank" password.</p>
+            <div className="flex items-start p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+              <Badge className={getTierColor("A")}>A</Badge>
+              <div className="ml-4">
+                <p className="font-bold text-slate-900 dark:text-white">Nightmare King/Queen (80-89)</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  A robust password that uses a combination of letters, numbers, and special characters, but 
+                  may be a little shorter than the "S-Rank" password.
+                </p>
               </div>
             </div>
             
-            <div className="flex items-start">
-              <span className={`text-xl font-bold mr-3 ${getRankColor("B")}`}>B-Rank</span>
-              <div>
-                <div className="font-semibold text-slate-800 dark:text-slate-200">Abyssal Phantom</div>
-                <p className="text-slate-600 dark:text-slate-400">A solid password with a good mix of characters, but possibly lacking in length or randomness.</p>
+            <div className="flex items-start p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <Badge className={getTierColor("B")}>B</Badge>
+              <div className="ml-4">
+                <p className="font-bold text-slate-900 dark:text-white">Abyssal Phantom (65-79)</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  A solid password with a good mix of characters, but possibly lacking in length or randomness.
+                </p>
               </div>
             </div>
             
-            <div className="flex items-start">
-              <span className={`text-xl font-bold mr-3 ${getRankColor("C")}`}>C-Rank</span>
-              <div>
-                <div className="font-semibold text-slate-800 dark:text-slate-200">Eclipsed Knight</div>
-                <p className="text-slate-600 dark:text-slate-400">A password that includes both letters and numbers but is shorter or simpler.</p>
+            <div className="flex items-start p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+              <Badge className={getTierColor("C")}>C</Badge>
+              <div className="ml-4">
+                <p className="font-bold text-slate-900 dark:text-white">Eclipsed Knight (50-64)</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  A password that includes both letters and numbers but is shorter or simpler. 
+                  It's decent but could be vulnerable to attacks.
+                </p>
               </div>
             </div>
             
-            <div className="flex items-start">
-              <span className={`text-xl font-bold mr-3 ${getRankColor("D")}`}>D-Rank</span>
-              <div>
-                <div className="font-semibold text-slate-800 dark:text-slate-200">Void Walker</div>
-                <p className="text-slate-600 dark:text-slate-400">A password that may only be one word or easy to guess. It lacks complexity and is vulnerable to common attack methods.</p>
+            <div className="flex items-start p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+              <Badge className={getTierColor("D")}>D</Badge>
+              <div className="ml-4">
+                <p className="font-bold text-slate-900 dark:text-white">Void Walker (35-49)</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  A password that may only be one word or easy to guess. It lacks complexity and 
+                  is vulnerable to common attack methods.
+                </p>
               </div>
             </div>
             
-            <div className="flex items-start">
-              <span className={`text-xl font-bold mr-3 ${getRankColor("E")}`}>E-Rank</span>
-              <div>
-                <div className="font-semibold text-slate-800 dark:text-slate-200">Shadow Novice</div>
-                <p className="text-slate-600 dark:text-slate-400">A password that is easily cracked. It may be a common word, simple phrase, or include predictable patterns.</p>
+            <div className="flex items-start p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+              <Badge className={getTierColor("E")}>E</Badge>
+              <div className="ml-4">
+                <p className="font-bold text-slate-900 dark:text-white">Shadow Novice (0-34)</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  A password that is easily cracked. It may be a common word, simple phrase, 
+                  or include predictable patterns.
+                </p>
               </div>
             </div>
           </div>
