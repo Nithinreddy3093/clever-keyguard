@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Shield, Trophy, ArrowUp, ArrowDown, Minus, User, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -61,6 +62,7 @@ const getTierColor = (tier: RankTier): string => {
 const PasswordRankings = () => {
   const [rankings, setRankings] = useState<UserRanking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [analysis, setAnalysis] = useState<any>(null);
   const [testScore, setTestScore] = useState(0);
@@ -68,9 +70,37 @@ const PasswordRankings = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
+  // Get stored username from localStorage on component mount
+  useEffect(() => {
+    const storedUsername = localStorage.getItem("shadowTierUsername");
+    if (storedUsername) {
+      setUsername(storedUsername);
+    }
+  }, []);
+
   useEffect(() => {
     fetchRankings();
-  }, [toast]);
+    
+    // Set up real-time subscription for rankings updates
+    const channel = supabase
+      .channel('rankings-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'password_history'
+        },
+        () => {
+          fetchRankings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const fetchRankings = async () => {
     setLoading(true);
@@ -78,34 +108,34 @@ const PasswordRankings = () => {
       // Get password history data which includes user_id and scores
       const { data: passwordData, error: passwordError } = await supabase
         .from("password_history")
-        .select("user_id, score");
+        .select("user_id, score, metadata");
 
       if (passwordError) throw passwordError;
 
       // Process the rankings
-      const userScores: Record<string, number[]> = {};
+      const userScores: Record<string, { scores: number[], displayName: string }> = {};
       
       // Group scores by user
       passwordData.forEach((entry) => {
         if (!userScores[entry.user_id]) {
-          userScores[entry.user_id] = [];
+          userScores[entry.user_id] = {
+            scores: [],
+            displayName: entry.metadata?.username || `User ${entry.user_id.substring(0, 4)}`
+          };
         }
-        userScores[entry.user_id].push(entry.score);
+        userScores[entry.user_id].scores.push(entry.score);
       });
       
       // Calculate average scores and create rankings
       const rankingsData: UserRanking[] = [];
       
-      Object.entries(userScores).forEach(([userId, scores]) => {
+      Object.entries(userScores).forEach(([userId, userData]) => {
         // Find the max score for each user
-        const maxScore = Math.max(...scores);
-        
-        // Generate an anonymous display name based on user ID
-        const displayName = userId ? `User ${userId.substring(0, 4)}` : "Anonymous";
+        const maxScore = Math.max(...userData.scores);
         
         rankingsData.push({
           userId,
-          displayName,
+          displayName: userData.displayName,
           score: maxScore,
           tier: getTierForScore(maxScore),
           rank: 0, // Will be calculated later
@@ -137,6 +167,12 @@ const PasswordRankings = () => {
   const getUserRank = () => {
     if (!user) return null;
     return rankings.find(r => r.userId === user.id);
+  };
+
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newUsername = e.target.value;
+    setUsername(newUsername);
+    localStorage.setItem("shadowTierUsername", newUsername);
   };
 
   const handlePasswordChange = (value: string) => {
@@ -174,14 +210,23 @@ const PasswordRankings = () => {
       return;
     }
 
+    if (!username.trim()) {
+      toast({
+        title: "Username required",
+        description: "Please enter a username to identify yourself on the leaderboard",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const passwordHash = crypto.SHA256(password).toString();
       
-      // Save to Supabase
+      // Save to Supabase with username in metadata
       const { error } = await supabase.from("password_history").insert({
         user_id: user.id,
         password_hash: passwordHash,
-        score: analysis.score,
+        score: testScore, // Use the ranking score (0-100)
         length: analysis.length,
         has_upper: analysis.hasUpper,
         has_lower: analysis.hasLower,
@@ -189,7 +234,8 @@ const PasswordRankings = () => {
         has_special: analysis.hasSpecial,
         is_common: analysis.isCommon,
         has_common_pattern: analysis.hasCommonPattern,
-        entropy: analysis.entropy
+        entropy: analysis.entropy,
+        metadata: { username: username }
       });
       
       if (error) throw error;
@@ -242,6 +288,19 @@ const PasswordRankings = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
+            <div className="mb-4">
+              <label htmlFor="username" className="block text-sm font-medium mb-1 text-slate-900 dark:text-white">
+                Choose your Shadow Username
+              </label>
+              <Input
+                id="username"
+                placeholder="Enter your shadow name"
+                value={username}
+                onChange={handleUsernameChange}
+                className="mb-4"
+              />
+            </div>
+            
             <PasswordInput password={password} onChange={handlePasswordChange} />
             
             {analysis && (
@@ -297,7 +356,7 @@ const PasswordRankings = () => {
                     </Badge>
                   </div>
                   <div className="ml-4">
-                    <p className="font-semibold text-slate-900 dark:text-white">You</p>
+                    <p className="font-semibold text-slate-900 dark:text-white">{userRank.displayName}</p>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
                       {getTierName(userRank.tier)}
                     </p>
@@ -353,7 +412,7 @@ const PasswordRankings = () => {
                           <div className="flex items-center">
                             <p className="font-semibold text-slate-900 dark:text-white">
                               {ranking.userId === user?.id ? (
-                                <span>You</span>
+                                <span>You ({ranking.displayName})</span>
                               ) : (
                                 <span className="flex items-center">
                                   <User className="h-3 w-3 mr-1" />
