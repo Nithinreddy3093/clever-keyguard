@@ -26,6 +26,12 @@ interface UserRanking {
   change?: "up" | "down" | "same";
 }
 
+// Define the JSON metadata type to handle username
+interface PasswordMetadata {
+  username?: string;
+  [key: string]: any;
+}
+
 const getTierForScore = (score: number): RankTier => {
   if (score >= 90) return "S";
   if (score >= 80) return "A";
@@ -130,9 +136,13 @@ const PasswordRankings = () => {
         if (!entry.user_id) return; // Skip entries without user_id
         
         if (!userScores[entry.user_id]) {
+          // Handle metadata properly to extract username
+          const metadata = entry.metadata as PasswordMetadata | null;
+          const displayName = metadata?.username || `User ${entry.user_id.substring(0, 4)}`;
+          
           userScores[entry.user_id] = {
             scores: [],
-            displayName: entry.metadata?.username || `User ${entry.user_id.substring(0, 4)}`
+            displayName
           };
         }
         userScores[entry.user_id].scores.push(entry.score);
