@@ -1,11 +1,17 @@
 
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Trophy, ArrowUp, ArrowDown, Minus, User } from "lucide-react";
+import { Shield, Trophy, ArrowUp, ArrowDown, Minus, User, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import PasswordInput from "@/components/PasswordInput";
+import StrengthMeter from "@/components/StrengthMeter";
+import { analyzePassword } from "@/lib/passwordAnalyzer";
+import crypto from "crypto-js";
 
 // Define types for user ranking data
 type RankTier = "S" | "A" | "B" | "C" | "D" | "E";
@@ -55,78 +61,153 @@ const getTierColor = (tier: RankTier): string => {
 const PasswordRankings = () => {
   const [rankings, setRankings] = useState<UserRanking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [password, setPassword] = useState("");
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [testScore, setTestScore] = useState(0);
+  const [savedToRankings, setSavedToRankings] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
   useEffect(() => {
-    const fetchRankings = async () => {
-      setLoading(true);
-      try {
-        // Get password history data which includes user_id and scores
-        const { data: passwordData, error: passwordError } = await supabase
-          .from("password_history")
-          .select("user_id, score");
-
-        if (passwordError) throw passwordError;
-
-        // Process the rankings
-        const userScores: Record<string, number[]> = {};
-        
-        // Group scores by user
-        passwordData.forEach((entry) => {
-          if (!userScores[entry.user_id]) {
-            userScores[entry.user_id] = [];
-          }
-          userScores[entry.user_id].push(entry.score);
-        });
-        
-        // Calculate average scores and create rankings
-        const rankingsData: UserRanking[] = [];
-        
-        Object.entries(userScores).forEach(([userId, scores]) => {
-          // Find the max score for each user
-          const maxScore = Math.max(...scores);
-          
-          // Generate an anonymous display name based on user ID
-          const displayName = userId ? `User ${userId.substring(0, 4)}` : "Anonymous";
-          
-          rankingsData.push({
-            userId,
-            displayName,
-            score: maxScore,
-            tier: getTierForScore(maxScore),
-            rank: 0, // Will be calculated later
-            change: "same" // Default value
-          });
-        });
-        
-        // Sort by score descending
-        rankingsData.sort((a, b) => b.score - a.score);
-        
-        // Assign ranks
-        rankingsData.forEach((ranking, index) => {
-          ranking.rank = index + 1;
-        });
-        
-        setRankings(rankingsData);
-      } catch (error: any) {
-        console.error("Error fetching rankings:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load rankings data",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchRankings();
   }, [toast]);
+
+  const fetchRankings = async () => {
+    setLoading(true);
+    try {
+      // Get password history data which includes user_id and scores
+      const { data: passwordData, error: passwordError } = await supabase
+        .from("password_history")
+        .select("user_id, score");
+
+      if (passwordError) throw passwordError;
+
+      // Process the rankings
+      const userScores: Record<string, number[]> = {};
+      
+      // Group scores by user
+      passwordData.forEach((entry) => {
+        if (!userScores[entry.user_id]) {
+          userScores[entry.user_id] = [];
+        }
+        userScores[entry.user_id].push(entry.score);
+      });
+      
+      // Calculate average scores and create rankings
+      const rankingsData: UserRanking[] = [];
+      
+      Object.entries(userScores).forEach(([userId, scores]) => {
+        // Find the max score for each user
+        const maxScore = Math.max(...scores);
+        
+        // Generate an anonymous display name based on user ID
+        const displayName = userId ? `User ${userId.substring(0, 4)}` : "Anonymous";
+        
+        rankingsData.push({
+          userId,
+          displayName,
+          score: maxScore,
+          tier: getTierForScore(maxScore),
+          rank: 0, // Will be calculated later
+          change: "same" // Default value
+        });
+      });
+      
+      // Sort by score descending
+      rankingsData.sort((a, b) => b.score - a.score);
+      
+      // Assign ranks
+      rankingsData.forEach((ranking, index) => {
+        ranking.rank = index + 1;
+      });
+      
+      setRankings(rankingsData);
+    } catch (error: any) {
+      console.error("Error fetching rankings:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load rankings data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getUserRank = () => {
     if (!user) return null;
     return rankings.find(r => r.userId === user.id);
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    if (value) {
+      const results = analyzePassword(value);
+      setAnalysis(results);
+      
+      // Convert score (0-4) to a ranking score (0-100)
+      const rankingScore = Math.round(results.score * 25);
+      setTestScore(rankingScore);
+    } else {
+      setAnalysis(null);
+      setTestScore(0);
+    }
+    setSavedToRankings(false);
+  };
+
+  const saveToRankings = async () => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to save this score to rankings",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!password || !analysis) {
+      toast({
+        title: "No password",
+        description: "Please enter a password to test and save",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const passwordHash = crypto.SHA256(password).toString();
+      
+      // Save to Supabase
+      const { error } = await supabase.from("password_history").insert({
+        user_id: user.id,
+        password_hash: passwordHash,
+        score: analysis.score,
+        length: analysis.length,
+        has_upper: analysis.hasUpper,
+        has_lower: analysis.hasLower,
+        has_digit: analysis.hasDigit,
+        has_special: analysis.hasSpecial,
+        is_common: analysis.isCommon,
+        has_common_pattern: analysis.hasCommonPattern,
+        entropy: analysis.entropy
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Score saved",
+        description: "Your password score has been saved to the rankings",
+      });
+      
+      setSavedToRankings(true);
+      fetchRankings(); // Refresh rankings
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const userRank = getUserRank();
@@ -134,6 +215,13 @@ const PasswordRankings = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       <div className="container max-w-4xl py-12 px-4 sm:px-6">
+        <Button asChild variant="outline" className="mb-8">
+          <Link to="/">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Home
+          </Link>
+        </Button>
+        
         <header className="text-center mb-12">
           <div className="flex justify-center mb-4">
             <Trophy className="h-16 w-16 text-amber-500" />
@@ -145,6 +233,49 @@ const PasswordRankings = () => {
             See how your password strength compares to others
           </p>
         </header>
+
+        <Card className="mb-8 border-none shadow-lg bg-white dark:bg-slate-800">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-xl flex items-center text-slate-900 dark:text-white">
+              <Shield className="mr-2 h-5 w-5 text-primary" />
+              Test Your Password Strength
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PasswordInput password={password} onChange={handlePasswordChange} />
+            
+            {analysis && (
+              <div className="mt-4 space-y-4">
+                <StrengthMeter score={analysis.score} />
+                
+                <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="font-semibold text-slate-900 dark:text-white">
+                      Tier: {getTierForScore(testScore)}
+                    </p>
+                    <Badge className={getTierColor(getTierForScore(testScore))}>
+                      {getTierName(getTierForScore(testScore))}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">
+                    This password would score {testScore}/100 on our ranking system
+                  </p>
+                </div>
+                
+                {user && (
+                  <div className="flex justify-end">
+                    <Button 
+                      onClick={saveToRankings} 
+                      disabled={savedToRankings}
+                    >
+                      {savedToRankings ? "Score Saved" : "Save to Rankings"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {userRank && (
           <Card className="mb-8 border-none shadow-lg bg-white dark:bg-slate-800">

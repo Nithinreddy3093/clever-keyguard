@@ -178,18 +178,21 @@ const ServicePasswords = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       <div className="container max-w-4xl py-12 px-4">
-        <div className="mb-8 flex items-center justify-between">
-          <Button asChild variant="outline">
-            <Link to="/">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Home
-            </Link>
-          </Button>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white text-center flex-grow">
+        <Button asChild variant="outline" className="mb-8">
+          <Link to="/">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Home
+          </Link>
+        </Button>
+        
+        <header className="text-center mb-8">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-3">
             Service-Specific Passwords
           </h1>
-          <div className="w-[100px]"></div>
-        </div>
+          <p className="text-xl text-slate-600 dark:text-slate-300">
+            Generate secure passwords for popular online services
+          </p>
+        </header>
         
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-8">
           {services.map((service) => (
