@@ -204,7 +204,8 @@ const PasswordRankings = () => {
       setAnalysis(results);
       
       // Convert score (0-4) to a ranking score (0-100)
-      const rankingScore = Math.round(results.score * 25);
+      // Ensure score is within valid range (0-100) for the database constraint
+      const rankingScore = Math.min(Math.max(Math.round(results.score * 25), 0), 100);
       setTestScore(rankingScore);
     } else {
       setAnalysis(null);
@@ -244,11 +245,14 @@ const PasswordRankings = () => {
     try {
       const passwordHash = crypto.SHA256(password).toString();
       
+      // Ensure score is within valid range (0-100) for the database constraint
+      const validScore = Math.min(Math.max(testScore, 0), 100);
+      
       // Save to Supabase with username in metadata
       const { error } = await supabase.from("password_history").insert({
         user_id: user.id,
         password_hash: passwordHash,
-        score: testScore, // Use the ranking score (0-100)
+        score: validScore,
         length: analysis.length,
         has_upper: analysis.hasUpper,
         has_lower: analysis.hasLower,
@@ -260,19 +264,23 @@ const PasswordRankings = () => {
         metadata: { username: username }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error saving password:", error);
+        throw error;
+      }
       
       toast({
         title: "Score saved",
-        description: "Your password score has been saved to the rankings",
+        description: `Your password score has been saved to the rankings as ${username}`,
       });
       
       setSavedToRankings(true);
       fetchRankings(); // Refresh rankings
     } catch (error: any) {
+      console.error("Error in saveToRankings:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to save password score",
         variant: "destructive",
       });
     }
