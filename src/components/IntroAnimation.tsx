@@ -1,11 +1,13 @@
 
 import { useState, useEffect } from "react";
 import { Shield, Lock, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
 const IntroAnimation = () => {
   const [showIntro, setShowIntro] = useState(true);
   const [animationPhase, setAnimationPhase] = useState(0);
+  const [fadeOut, setFadeOut] = useState(false);
   const navigate = useNavigate();
 
   // Check if intro was already shown in this session
@@ -21,15 +23,18 @@ const IntroAnimation = () => {
     if (!showIntro) return;
 
     const phaseTimers = [
-      setTimeout(() => setAnimationPhase(1), 1000),  // Shield appears
-      setTimeout(() => setAnimationPhase(2), 2500),  // First text appears
-      setTimeout(() => setAnimationPhase(3), 4000),  // Second text appears
-      setTimeout(() => setAnimationPhase(4), 5500),  // Third text appears
-      setTimeout(() => setAnimationPhase(5), 7000),  // Final text appears
+      setTimeout(() => setAnimationPhase(1), 800),  // Shield appears
+      setTimeout(() => setAnimationPhase(2), 2000),  // First text appears
+      setTimeout(() => setAnimationPhase(3), 3200),  // Second text appears
+      setTimeout(() => setAnimationPhase(4), 4400),  // Third text appears
+      setTimeout(() => setAnimationPhase(5), 5600),  // Final text appears
       setTimeout(() => {
-        setShowIntro(false);
-        sessionStorage.setItem("introShown", "true");
-      }, 9000), // End animation
+        setFadeOut(true);
+        setTimeout(() => {
+          setShowIntro(false);
+          sessionStorage.setItem("introShown", "true");
+        }, 1200); // Fade out duration
+      }, 7500), // Start fade out
     ];
 
     return () => phaseTimers.forEach(timer => clearTimeout(timer));
@@ -37,61 +42,66 @@ const IntroAnimation = () => {
 
   // Skip animation
   const skipIntro = () => {
-    setShowIntro(false);
-    sessionStorage.setItem("introShown", "true");
+    setFadeOut(true);
+    setTimeout(() => {
+      setShowIntro(false);
+      sessionStorage.setItem("introShown", "true");
+    }, 800); // Fade out duration when skipping
   };
 
   if (!showIntro) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900 text-white overflow-hidden">
-      {/* Matrix-style background effect */}
-      <div className="absolute inset-0 opacity-20 overflow-hidden">
-        <MatrixRain />
+    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/95 text-white overflow-hidden transition-opacity duration-1000 ${fadeOut ? 'opacity-0' : 'opacity-100'}`}>
+      {/* Particle background */}
+      <div className="absolute inset-0 overflow-hidden">
+        <ParticleBackground />
       </div>
 
-      {/* Glowing gradient overlay */}
+      {/* Gradient overlay */}
       <div 
-        className="absolute inset-0 bg-gradient-radial from-purple-900/20 via-blue-900/30 to-slate-900/90 z-10"
-        style={{ mixBlendMode: "overlay" }}
+        className="absolute inset-0 bg-gradient-radial from-purple-900/20 via-blue-900/20 to-black/90 z-10"
       ></div>
 
       {/* Main content container */}
-      <div className="relative z-20 max-w-lg px-4 py-8 text-center">
+      <div className="relative z-20 max-w-lg px-6 py-10 text-center">
         {/* Shield animation */}
-        <div className={`transition-all duration-700 transform ${animationPhase >= 1 ? "scale-100 opacity-100" : "scale-50 opacity-0"}`}>
-          <div className="relative mx-auto w-32 h-32 mb-8">
-            <div className="absolute inset-0 flex items-center justify-center animate-pulse">
-              <Shield className="w-32 h-32 text-primary" strokeWidth={1} />
+        <div className={`transition-all duration-1000 transform ${animationPhase >= 1 ? "scale-100 opacity-100" : "scale-50 opacity-0"}`}>
+          <div className="relative mx-auto w-32 h-32 mb-10">
+            <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-500 ${animationPhase >= 1 ? "animate-float" : ""}`}>
+              <Shield className="w-32 h-32 text-primary" strokeWidth={1.5} />
             </div>
             <div className="absolute inset-0 flex items-center justify-center">
               <Lock className="w-16 h-16 text-white" />
             </div>
+            {/* Glow effect */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-50 blur-lg">
+              <Shield className="w-40 h-40 text-primary" strokeWidth={2} />
+            </div>
           </div>
         </div>
 
-        {/* Glitch text headings */}
+        {/* Stylish text headings */}
         <h1 
-          className={`text-4xl font-bold mb-4 glitch-text ${animationPhase >= 2 ? "opacity-100" : "opacity-0"}`} 
-          data-text="Welcome to the Future of Password Security!"
+          className={`text-4xl font-bold mb-6 transition-all duration-700 ${animationPhase >= 2 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
         >
-          Welcome to the Future of Password Security!
+          Welcome to the <span className="text-primary">Future</span> of Password Security
         </h1>
 
         <p 
-          className={`text-lg mb-8 transition-opacity duration-700 ${animationPhase >= 3 ? "opacity-100" : "opacity-0"}`}
+          className={`text-lg mb-8 transition-all duration-700 delay-100 ${animationPhase >= 3 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
         >
           Your first line of defense against cyber threats starts here.
         </p>
 
         {/* Status messages */}
-        <div className="space-y-3 my-8">
-          <div className={`flex items-center justify-center transition-opacity duration-500 ${animationPhase >= 3 ? "opacity-100" : "opacity-0"}`}>
+        <div className="space-y-4 my-10">
+          <div className={`flex items-center justify-center transition-all duration-500 ${animationPhase >= 3 ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"}`}>
             <div className={`w-4 h-4 rounded-full bg-primary mr-3 ${animationPhase >= 3 ? "animate-pulse" : ""}`}></div>
             <p className="text-left">Analyzing Password Strength...</p>
           </div>
           
-          <div className={`flex items-center justify-center transition-opacity duration-500 ${animationPhase >= 4 ? "opacity-100" : "opacity-0"}`}>
+          <div className={`flex items-center justify-center transition-all duration-500 ${animationPhase >= 4 ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"}`}>
             <div className={`w-4 h-4 rounded-full bg-cyan-400 mr-3 ${animationPhase >= 4 ? "animate-pulse" : ""}`}></div>
             <p className="text-left flex items-center">
               AI Security Insights Activated 
@@ -99,7 +109,7 @@ const IntroAnimation = () => {
             </p>
           </div>
           
-          <div className={`flex items-center justify-center transition-opacity duration-500 ${animationPhase >= 5 ? "opacity-100" : "opacity-0"}`}>
+          <div className={`flex items-center justify-center transition-all duration-500 ${animationPhase >= 5 ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"}`}>
             <div className={`w-4 h-4 rounded-full bg-green-400 mr-3 ${animationPhase >= 5 ? "animate-pulse" : ""}`}></div>
             <p className="text-left">Generating Unbreakable Passphrases...</p>
           </div>
@@ -107,27 +117,30 @@ const IntroAnimation = () => {
 
         {/* Tagline */}
         <h2 
-          className={`text-2xl font-bold mt-6 transition-opacity duration-700 ${animationPhase >= 5 ? "opacity-100" : "opacity-0"}`}
+          className={`text-2xl font-bold mt-8 transition-all duration-700 ${animationPhase >= 5 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
         >
           <span className="text-primary">Secure Smarter.</span> <span className="text-cyan-400">Defend Better.</span>
         </h2>
 
         {/* Skip button */}
-        <button 
+        <Button 
           onClick={skipIntro} 
-          className="absolute bottom-4 right-4 text-sm text-slate-400 hover:text-white transition-colors"
+          variant="outline"
+          size="sm"
+          className="absolute bottom-6 right-6 bg-black/50 border-gray-600 hover:bg-black/70 hover:border-gray-400 transition-all duration-300"
         >
-          Skip
-        </button>
+          Skip Intro
+        </Button>
       </div>
     </div>
   );
 };
 
-// Matrix-style background animation
-const MatrixRain = () => {
+// Particle animation background
+const ParticleBackground = () => {
   useEffect(() => {
-    const canvas = document.getElementById('matrixCanvas') as HTMLCanvasElement;
+    // Canvas setup
+    const canvas = document.getElementById('particleCanvas') as HTMLCanvasElement;
     if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
@@ -136,41 +149,100 @@ const MatrixRain = () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     
-    const fontSize = 14;
-    const columns = Math.floor(canvas.width / fontSize);
+    // Particle class
+    class Particle {
+      x: number;
+      y: number;
+      size: number;
+      speedX: number;
+      speedY: number;
+      color: string;
+      
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 3 + 1;
+        this.speedX = (Math.random() - 0.5) * 0.5;
+        this.speedY = (Math.random() - 0.5) * 0.5;
+        
+        // Choose color from cybersecurity theme
+        const colors = [
+          'rgba(155, 135, 245, 0.7)', // Purple
+          'rgba(14, 165, 233, 0.7)',  // Blue
+          'rgba(6, 182, 212, 0.7)',   // Cyan
+          'rgba(34, 211, 238, 0.5)',  // Light blue
+        ];
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+      }
+      
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        
+        // Wrap around screen edges
+        if (this.x > canvas.width) this.x = 0;
+        else if (this.x < 0) this.x = canvas.width;
+        if (this.y > canvas.height) this.y = 0;
+        else if (this.y < 0) this.y = canvas.height;
+      }
+      
+      draw() {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
     
-    // Array to track the y position of each column
-    const drops: number[] = Array(columns).fill(1);
+    // Create particle array
+    const particleArray: Particle[] = [];
+    const particleCount = Math.min(150, Math.floor(window.innerWidth * window.innerHeight / 10000));
     
-    // Characters to display
-    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
+    for (let i = 0; i < particleCount; i++) {
+      particleArray.push(new Particle());
+    }
     
-    // Drawing function
-    const draw = () => {
-      ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+    // Animation loop
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.02)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
-      ctx.fillStyle = "#0fa"; // Green text
-      ctx.font = `${fontSize}px monospace`;
+      for (let i = 0; i < particleArray.length; i++) {
+        particleArray[i].update();
+        particleArray[i].draw();
+        
+        // Connect particles with lines
+        connectParticles(particleArray[i], particleArray);
+      }
       
-      for (let i = 0; i < drops.length; i++) {
-        // Random character
-        const text = chars[Math.floor(Math.random() * chars.length)];
+      requestAnimationFrame(animate);
+    };
+    
+    // Draw connecting lines between nearby particles
+    const connectParticles = (particle: Particle, particles: Particle[]) => {
+      const maxDistance = 100;
+      
+      for (let i = 0; i < particles.length; i++) {
+        const dx = particle.x - particles[i].x;
+        const dy = particle.y - particles[i].y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
         
-        // x = column position, y = drop position
-        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-        
-        // Move the drop down
-        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-          drops[i] = 0;
+        if (distance < maxDistance) {
+          const opacity = 1 - (distance / maxDistance);
+          ctx.strokeStyle = `rgba(100, 100, 255, ${opacity * 0.15})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(particle.x, particle.y);
+          ctx.lineTo(particles[i].x, particles[i].y);
+          ctx.stroke();
         }
-        
-        drops[i]++;
       }
     };
     
-    const interval = setInterval(draw, 33);
+    animate();
     
+    // Handle window resize
     const handleResize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -179,12 +251,11 @@ const MatrixRain = () => {
     window.addEventListener('resize', handleResize);
     
     return () => {
-      clearInterval(interval);
       window.removeEventListener('resize', handleResize);
     };
   }, []);
   
-  return <canvas id="matrixCanvas" className="w-full h-full"></canvas>;
+  return <canvas id="particleCanvas" className="w-full h-full"></canvas>;
 };
 
 export default IntroAnimation;
