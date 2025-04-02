@@ -171,7 +171,7 @@ const PasswordRankings = () => {
   };
 
   const updateUserStreak = async () => {
-    if (!user) return;
+    if (!user) return currentStreak;
     
     try {
       // Get current streak
@@ -187,11 +187,11 @@ const PasswordRankings = () => {
         return currentStreak;
       }
       
-      let currentStreak = 0;
+      let userStreak = currentStreak;
       let lastDate = null;
       
       if (streakData && Array.isArray(streakData) && streakData.length > 0) {
-        currentStreak = streakData[0].daily_streak || 0;
+        userStreak = streakData[0].daily_streak || 0;
         lastDate = streakData[0].last_interaction_date;
       }
       
@@ -210,16 +210,16 @@ const PasswordRankings = () => {
         : 1;
       
       // Update streak based on days difference
-      let newStreak = currentStreak;
+      let newStreak = userStreak;
       if (daysDiff === 1) {
         // Yesterday - increment streak
-        newStreak = currentStreak + 1;
+        newStreak = userStreak + 1;
       } else if (daysDiff > 1) {
         // More than a day - reset streak
         newStreak = 1;
       } else if (daysDiff === 0) {
         // Same day - no change to streak
-        newStreak = Math.max(currentStreak, 1);
+        newStreak = Math.max(userStreak, 1);
       }
       
       return newStreak;
