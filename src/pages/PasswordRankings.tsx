@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,10 +50,21 @@ const PasswordRankings = () => {
         .select("user_id, score, metadata, daily_streak")
         .order("score", { ascending: false });
 
-      if (error) throw error;
-
-      if (!passwordData) {
+      if (error) {
+        console.error("Error fetching rankings:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load rankings data",
+          variant: "destructive",
+        });
         setRankings([]);
+        setLoading(false);
+        return;
+      }
+
+      if (!passwordData || !Array.isArray(passwordData)) {
+        setRankings([]);
+        setLoading(false);
         return;
       }
 
@@ -102,6 +112,7 @@ const PasswordRankings = () => {
         description: "Failed to load rankings data",
         variant: "destructive",
       });
+      setRankings([]);
     } finally {
       setLoading(false);
     }
@@ -118,9 +129,12 @@ const PasswordRankings = () => {
         .order("daily_streak", { ascending: false })
         .limit(1);
         
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching user streak:", error);
+        return;
+      }
       
-      if (data && data.length > 0) {
+      if (data && Array.isArray(data) && data.length > 0) {
         setCurrentStreak(data[0].daily_streak || 0);
       }
     } catch (error) {
@@ -168,12 +182,15 @@ const PasswordRankings = () => {
         .order("created_at", { ascending: false })
         .limit(1);
       
-      if (streakError) throw streakError;
+      if (streakError) {
+        console.error("Error fetching streak data:", streakError);
+        return currentStreak;
+      }
       
       let currentStreak = 0;
       let lastDate = null;
       
-      if (streakData && streakData.length > 0) {
+      if (streakData && Array.isArray(streakData) && streakData.length > 0) {
         currentStreak = streakData[0].daily_streak || 0;
         lastDate = streakData[0].last_interaction_date;
       }

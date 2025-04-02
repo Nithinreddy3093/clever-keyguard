@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 export type RankTier = "S" | "A" | "B" | "C" | "D" | "E";
 
@@ -66,6 +67,7 @@ export const getTierColor = (tier: RankTier): string => {
 const LeaderboardTable = ({ initialRankings, onRankingsChange }: LeaderboardTableProps) => {
   const [rankings, setRankings] = useState<UserRanking[]>(initialRankings);
   const { user } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     // Set initial rankings
@@ -105,9 +107,18 @@ const LeaderboardTable = ({ initialRankings, onRankingsChange }: LeaderboardTabl
         .select("user_id, score, metadata, daily_streak")
         .order("score", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching rankings data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch rankings data. Please try again later.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      if (!passwordData) {
+      if (!passwordData || !Array.isArray(passwordData)) {
+        console.error("No data returned or data is not an array");
         return;
       }
 
@@ -171,6 +182,11 @@ const LeaderboardTable = ({ initialRankings, onRankingsChange }: LeaderboardTabl
       }
     } catch (error) {
       console.error("Error fetching real-time rankings:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update rankings. Please refresh the page.",
+        variant: "destructive",
+      });
     }
   };
 

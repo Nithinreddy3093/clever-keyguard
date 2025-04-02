@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -175,10 +174,8 @@ const PasswordGame = () => {
       const daysDiff = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
       
       if (daysDiff === 1) {
-        // Show check-in dialog if one day has passed
         setShowDailyCheckin(true);
       } else if (daysDiff > 1) {
-        // Reset streak if more than one day has passed
         setStreak(0);
         localStorage.setItem("passwordStreak", "0");
       }
@@ -227,10 +224,8 @@ const PasswordGame = () => {
       setPlayerXp(parseInt(storedXp, 10) || 0);
     }
     
-    // Generate daily challenges
     generateDailyChallenges();
     
-    // Check if today's challenges have been completed
     const lastCompletionDate = localStorage.getItem("lastDailyChallengeCompletion");
     if (lastCompletionDate) {
       const today = new Date().toDateString();
@@ -239,7 +234,6 @@ const PasswordGame = () => {
       }
     }
     
-    // Check global rank if user is logged in
     if (user) {
       checkGlobalRank();
     }
@@ -263,7 +257,6 @@ const PasswordGame = () => {
         description: `You've reached level ${newLevel}!`,
       });
       
-      // Unlock "Streak Master" achievement at level 10
       if (newLevel >= 10 && !achievements.find(a => a.id === "streakMaster")?.unlocked) {
         const updatedAchievements = achievements.map(a => {
           if (a.id === "streakMaster") {
@@ -301,7 +294,6 @@ const PasswordGame = () => {
       if (error) throw error;
       
       if (data && data.length > 0) {
-        // Get unique users with their highest score
         const userMap = new Map<string, number>();
         
         data.forEach((entry) => {
@@ -317,17 +309,14 @@ const PasswordGame = () => {
           }
         });
         
-        // Convert to array sorted by score
         const rankings = Array.from(userMap.entries())
           .sort((a, b) => b[1] - a[1])
           .map(([userId], index) => ({ userId, rank: index + 1 }));
         
-        // Find user's rank
         const userRanking = rankings.find(r => r.userId === user.id);
         if (userRanking) {
           setGlobalRank(userRanking.rank);
           
-          // Unlock global elite achievement if ranked in top 10
           if (userRanking.rank <= 10 && !achievements.find(a => a.id === "globalElite")?.unlocked) {
             const updatedAchievements = achievements.map(a => {
               if (a.id === "globalElite") {
@@ -351,12 +340,10 @@ const PasswordGame = () => {
   };
 
   const generateDailyChallenges = () => {
-    // Check if challenges were already generated today
     const lastGeneration = localStorage.getItem("dailyChallengesGenerated");
     const today = new Date().toDateString();
     
     if (lastGeneration === today) {
-      // Challenges already generated today, load them
       const storedChallenges = localStorage.getItem("dailyChallenges");
       if (storedChallenges) {
         try {
@@ -369,7 +356,6 @@ const PasswordGame = () => {
       }
     }
     
-    // Generate new challenges
     const challenges: DailyChallenge[] = [
       {
         id: "daily1",
@@ -403,13 +389,11 @@ const PasswordGame = () => {
   };
 
   const handleCheckIn = () => {
-    // Increment streak
     const newStreak = streak + 1;
     setStreak(newStreak);
     localStorage.setItem("passwordStreak", newStreak.toString());
     localStorage.setItem("lastStreakUpdate", new Date().toISOString());
     
-    // Add XP for checking in
     addXp(25);
     
     toast({
@@ -417,7 +401,6 @@ const PasswordGame = () => {
       description: `You've maintained a ${newStreak}-day streak. +25 XP`,
     });
     
-    // Unlock streak master achievement at 7 days
     if (newStreak >= 7 && !achievements.find(a => a.id === "streakMaster")?.unlocked) {
       const updatedAchievements = achievements.map(a => {
         if (a.id === "streakMaster") {
@@ -440,7 +423,6 @@ const PasswordGame = () => {
   const handleDailyChallengeComplete = (challenge: DailyChallenge) => {
     if (challenge.completed) return;
     
-    // Mark challenge as completed
     const updatedChallenges = dailyChallenges.map(c => {
       if (c.id === challenge.id) {
         return { ...c, completed: true };
@@ -451,10 +433,8 @@ const PasswordGame = () => {
     setDailyChallenges(updatedChallenges);
     localStorage.setItem("dailyChallenges", JSON.stringify(updatedChallenges));
     
-    // Add XP
     addXp(challenge.xp);
     
-    // Update last completion date
     localStorage.setItem("lastDailyChallengeCompletion", new Date().toDateString());
     setTodayCompleted(true);
     
@@ -463,7 +443,6 @@ const PasswordGame = () => {
       description: `You've completed "${challenge.title}". +${challenge.xp} XP`,
     });
     
-    // Update streak
     const lastUpdate = localStorage.getItem("lastStreakUpdate");
     if (!lastUpdate || new Date(lastUpdate).toDateString() !== new Date().toDateString()) {
       const newStreak = streak + 1;
@@ -471,7 +450,6 @@ const PasswordGame = () => {
       localStorage.setItem("passwordStreak", newStreak.toString());
       localStorage.setItem("lastStreakUpdate", new Date().toISOString());
       
-      // Unlock streak master achievement at 7 days
       if (newStreak >= 7 && !achievements.find(a => a.id === "streakMaster")?.unlocked) {
         const updatedAchievements = achievements.map(a => {
           if (a.id === "streakMaster") {
@@ -524,7 +502,6 @@ const PasswordGame = () => {
         });
       }
       
-      // Check daily challenges
       if (!dailyChallenges[0].completed && results.hasUpper && results.hasLower && results.hasDigit && results.hasSpecial) {
         handleDailyChallengeComplete(dailyChallenges[0]);
       }
@@ -588,7 +565,6 @@ const PasswordGame = () => {
     setQuestsCompleted(updatedQuests);
     localStorage.setItem("passwordQuests", JSON.stringify(updatedQuests));
     
-    // Update streak if first quest completion today
     const lastStreakUpdate = localStorage.getItem("lastStreakUpdate");
     const today = new Date().toDateString();
     
@@ -598,7 +574,6 @@ const PasswordGame = () => {
       localStorage.setItem("passwordStreak", newStreak.toString());
       localStorage.setItem("lastStreakUpdate", new Date().toISOString());
       
-      // Unlock streak master achievement at 7 days
       if (newStreak >= 7 && !achievements.find(a => a.id === "streakMaster")?.unlocked) {
         const updatedAchievements = achievements.map(a => {
           if (a.id === "streakMaster") {
@@ -616,7 +591,6 @@ const PasswordGame = () => {
       }
     }
     
-    // Add XP
     addXp(completedQuest.xp || 50);
     
     setRewardText(`You've completed the "${quest.title}" quest and earned ${quest.xp || 50} XP!`);
@@ -636,7 +610,6 @@ const PasswordGame = () => {
     if (!user) return;
     
     try {
-      // Get current streak
       const { data: streakData, error: streakError } = await supabase
         .from("password_history")
         .select("daily_streak, last_interaction_date")
@@ -644,17 +617,19 @@ const PasswordGame = () => {
         .order("created_at", { ascending: false })
         .limit(1);
       
-      if (streakError) throw streakError;
+      if (streakError) {
+        console.error("Error updating streak:", streakError);
+        return streak;
+      }
       
       let currentStreak = 0;
       let lastDate = null;
       
-      if (streakData && streakData.length > 0) {
+      if (streakData && Array.isArray(streakData) && streakData.length > 0) {
         currentStreak = streakData[0].daily_streak || 0;
         lastDate = streakData[0].last_interaction_date;
       }
       
-      // Check if last interaction was yesterday or earlier
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
@@ -663,21 +638,16 @@ const PasswordGame = () => {
         lastInteraction.setHours(0, 0, 0, 0);
       }
       
-      // Calculate days difference
       const daysDiff = lastInteraction 
         ? Math.floor((today.getTime() - lastInteraction.getTime()) / (1000 * 60 * 60 * 24))
         : 1;
       
-      // Update streak based on days difference
       let newStreak = currentStreak;
       if (daysDiff === 1) {
-        // Yesterday - increment streak
         newStreak = currentStreak + 1;
       } else if (daysDiff > 1) {
-        // More than a day - reset streak
         newStreak = 1;
       } else if (daysDiff === 0) {
-        // Same day - no change to streak
         newStreak = Math.max(currentStreak, 1);
       }
       
@@ -756,7 +726,6 @@ const PasswordGame = () => {
         description: `Your password game progress has been saved as ${username}`,
       });
       
-      // Check global rank after saving
       checkGlobalRank();
     } catch (error: any) {
       console.error("Error saving progress:", error);
@@ -789,7 +758,6 @@ const PasswordGame = () => {
             Complete quests, earn achievements and improve your security!
           </p>
           
-          {/* Player Level Info */}
           <div className="mt-6 flex flex-col items-center">
             <div className="flex items-center justify-center mb-2">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
@@ -832,7 +800,6 @@ const PasswordGame = () => {
           </div>
         </header>
         
-        {/* Daily Challenges Section */}
         <Card className="mb-6 border-none shadow-lg bg-white dark:bg-slate-800 overflow-hidden">
           <CardHeader className="pb-3 bg-gradient-to-r from-amber-500 to-orange-500 dark:from-amber-600 dark:to-orange-600">
             <CardTitle className="text-xl flex items-center text-white">
