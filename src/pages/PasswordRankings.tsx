@@ -1,65 +1,25 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Shield, Trophy, ArrowUp, ArrowDown, Minus, User, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Shield, Trophy, ArrowLeft, Eye, EyeOff, User, Award } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import StrengthMeter from "@/components/StrengthMeter";
 import { analyzePassword } from "@/lib/passwordAnalyzer";
 import crypto from "crypto-js";
-
-type RankTier = "S" | "A" | "B" | "C" | "D" | "E";
-
-interface UserRanking {
-  userId: string;
-  displayName: string;
-  score: number;
-  tier: RankTier;
-  rank: number;
-  change: "up" | "down" | "same"; // Made change required and properly typed
-}
+import LeaderboardTable, { UserRanking, getTierForScore, getTierName, getTierColor } from "@/components/LeaderboardTable";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PasswordMetadata {
   username?: string;
   [key: string]: any;
 }
-
-const getTierForScore = (score: number): RankTier => {
-  if (score >= 90) return "S";
-  if (score >= 80) return "A";
-  if (score >= 65) return "B";
-  if (score >= 50) return "C";
-  if (score >= 35) return "D";
-  return "E";
-};
-
-const getTierName = (tier: RankTier): string => {
-  const names: Record<RankTier, string> = {
-    "S": "Shadow Sovereign",
-    "A": "Nightmare King/Queen",
-    "B": "Abyssal Phantom",
-    "C": "Eclipsed Knight",
-    "D": "Void Walker", 
-    "E": "Shadow Novice"
-  };
-  return names[tier];
-};
-
-const getTierColor = (tier: RankTier): string => {
-  const colors: Record<RankTier, string> = {
-    "S": "bg-purple-600 hover:bg-purple-700",
-    "A": "bg-indigo-600 hover:bg-indigo-700",
-    "B": "bg-blue-600 hover:bg-blue-700",
-    "C": "bg-green-600 hover:bg-green-700",
-    "D": "bg-yellow-600 hover:bg-yellow-700",
-    "E": "bg-red-600 hover:bg-red-700"
-  };
-  return colors[tier];
-};
 
 const PasswordRankings = () => {
   const [rankings, setRankings] = useState<UserRanking[]>([]);
@@ -70,6 +30,7 @@ const PasswordRankings = () => {
   const [analysis, setAnalysis] = useState<any>(null);
   const [testScore, setTestScore] = useState(0);
   const [savedToRankings, setSavedToRankings] = useState(false);
+  const [currentStreak, setCurrentStreak] = useState(0);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -79,14 +40,15 @@ const PasswordRankings = () => {
       setUsername(storedUsername);
     }
     fetchRankings();
-  }, []);
+    fetchUserStreak();
+  }, [user]);
 
   const fetchRankings = async () => {
     setLoading(true);
     try {
       const { data: passwordData, error } = await supabase
         .from("password_history")
-        .select("user_id, score, metadata")
+        .select("user_id, score, metadata, daily_streak")
         .order("score", { ascending: false });
 
       if (error) throw error;
@@ -96,7 +58,7 @@ const PasswordRankings = () => {
         return;
       }
 
-      const userMap = new Map<string, { score: number, displayName: string }>();
+      const userMap = new Map<string, { score: number, displayName: string, streak?: number }>();
       
       passwordData.forEach((entry) => {
         if (!entry.user_id) return;
@@ -105,11 +67,19 @@ const PasswordRankings = () => {
         const displayName = metadata.username || `User ${entry.user_id.substring(0, 4)}`;
         
         if (!userMap.has(entry.user_id)) {
-          userMap.set(entry.user_id, { score: entry.score, displayName });
+          userMap.set(entry.user_id, { 
+            score: entry.score, 
+            displayName,
+            streak: entry.daily_streak
+          });
         } else {
           const current = userMap.get(entry.user_id)!;
           if (entry.score > current.score) {
-            userMap.set(entry.user_id, { score: entry.score, displayName });
+            userMap.set(entry.user_id, { 
+              score: entry.score, 
+              displayName,
+              streak: entry.daily_streak
+            });
           }
         }
       });
@@ -120,7 +90,8 @@ const PasswordRankings = () => {
         score: data.score,
         tier: getTierForScore(data.score),
         rank: index + 1,
-        change: "same" as const
+        change: "same" as const,
+        streak: data.streak
       }));
 
       setRankings(rankingsData);
@@ -133,6 +104,27 @@ const PasswordRankings = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUserStreak = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from("password_history")
+        .select("daily_streak, last_interaction_date")
+        .eq("user_id", user.id)
+        .order("daily_streak", { ascending: false })
+        .limit(1);
+        
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        setCurrentStreak(data[0].daily_streak || 0);
+      }
+    } catch (error) {
+      console.error("Error fetching user streak:", error);
     }
   };
 
@@ -164,11 +156,68 @@ const PasswordRankings = () => {
     setSavedToRankings(false);
   };
 
+  const updateUserStreak = async () => {
+    if (!user) return;
+    
+    try {
+      // Get current streak
+      const { data: streakData, error: streakError } = await supabase
+        .from("password_history")
+        .select("daily_streak, last_interaction_date")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      
+      if (streakError) throw streakError;
+      
+      let currentStreak = 0;
+      let lastDate = null;
+      
+      if (streakData && streakData.length > 0) {
+        currentStreak = streakData[0].daily_streak || 0;
+        lastDate = streakData[0].last_interaction_date;
+      }
+      
+      // Check if last interaction was yesterday or earlier
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const lastInteraction = lastDate ? new Date(lastDate) : null;
+      if (lastInteraction) {
+        lastInteraction.setHours(0, 0, 0, 0);
+      }
+      
+      // Calculate days difference
+      const daysDiff = lastInteraction 
+        ? Math.floor((today.getTime() - lastInteraction.getTime()) / (1000 * 60 * 60 * 24))
+        : 1;
+      
+      // Update streak based on days difference
+      let newStreak = currentStreak;
+      if (daysDiff === 1) {
+        // Yesterday - increment streak
+        newStreak = currentStreak + 1;
+      } else if (daysDiff > 1) {
+        // More than a day - reset streak
+        newStreak = 1;
+      } else if (daysDiff === 0) {
+        // Same day - no change to streak
+        newStreak = Math.max(currentStreak, 1);
+      }
+      
+      return newStreak;
+      
+    } catch (error) {
+      console.error("Error updating streak:", error);
+      return currentStreak;
+    }
+  };
+
   const saveToRankings = async () => {
     if (!user) {
       toast({
         title: "Sign in required",
-        description: "Please sign in to save this score to rankings",
+        description: "Please sign in to save your score to rankings",
         variant: "destructive",
       });
       return;
@@ -194,8 +243,8 @@ const PasswordRankings = () => {
 
     try {
       const passwordHash = crypto.SHA256(password).toString();
-      
       const clampedScore = Math.min(Math.max(Math.round(testScore), 0), 100);
+      const newStreak = await updateUserStreak();
       
       const { error } = await supabase.from("password_history").insert({
         user_id: user.id,
@@ -209,7 +258,9 @@ const PasswordRankings = () => {
         is_common: analysis.isCommon,
         has_common_pattern: analysis.hasCommonPattern,
         entropy: analysis.entropy,
-        metadata: { username: username }
+        metadata: { username: username },
+        daily_streak: newStreak,
+        last_interaction_date: new Date().toISOString().split('T')[0]
       });
       
       if (error) throw error;
@@ -221,6 +272,7 @@ const PasswordRankings = () => {
       
       setSavedToRankings(true);
       fetchRankings();
+      setCurrentStreak(newStreak);
     } catch (error: any) {
       console.error("Error saving score:", error);
       toast({
@@ -248,11 +300,19 @@ const PasswordRankings = () => {
             <Trophy className="h-16 w-16 text-amber-500" />
           </div>
           <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white mb-3">
-            Password Strength Rankings
+            Shadow Tier Rankings
           </h1>
           <p className="text-xl text-slate-600 dark:text-slate-300">
-            Test your password and see how it compares to others
+            Test your password and see how you rank against other shadow warriors
           </p>
+          {currentStreak > 0 && (
+            <div className="mt-4 inline-flex items-center px-4 py-2 rounded-full bg-amber-100 dark:bg-amber-900/30">
+              <Award className="h-5 w-5 text-amber-500 mr-2" />
+              <span className="font-medium">
+                {currentStreak} day{currentStreak !== 1 ? 's' : ''} streak
+              </span>
+            </div>
+          )}
         </header>
 
         <Card className="mb-8 border-none shadow-lg bg-white dark:bg-slate-800">
@@ -266,16 +326,16 @@ const PasswordRankings = () => {
             <div className="space-y-4">
               <div>
                 <label htmlFor="username" className="block text-sm font-medium mb-1 text-slate-900 dark:text-white">
-                  Display Name
+                  Shadow Warrior Name
                 </label>
                 <Input
                   id="username"
-                  placeholder="Enter your display name"
+                  placeholder="Enter your shadow name"
                   value={username}
                   onChange={handleUsernameChange}
                 />
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  This will be shown on the leaderboard
+                  This will be shown on the shadow leaderboard
                 </p>
               </div>
               
@@ -349,7 +409,7 @@ const PasswordRankings = () => {
                     </Button>
                   ) : (
                     <Button variant="outline" className="w-full" asChild>
-                      <Link to="/login">
+                      <Link to="/auth">
                         Sign In to Save Your Score
                       </Link>
                     </Button>
@@ -388,7 +448,12 @@ const PasswordRankings = () => {
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-bold text-primary">{userRank.score}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Strength Score</p>
+                  <div className="flex items-center justify-end mt-1">
+                    <Award className="h-4 w-4 text-amber-500 mr-1" />
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      {userRank.streak || 0} day streak
+                    </p>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -397,70 +462,82 @@ const PasswordRankings = () => {
 
         <Card className="border-none shadow-lg bg-white dark:bg-slate-800">
           <CardHeader className="pb-3">
-            <CardTitle className="text-xl flex items-center text-slate-900 dark:text-white">
-              <Trophy className="mr-2 h-5 w-5 text-amber-500" />
-              Global Leaderboard
+            <CardTitle className="text-xl flex items-center justify-between text-slate-900 dark:text-white">
+              <div className="flex items-center">
+                <Trophy className="mr-2 h-5 w-5 text-amber-500" />
+                Shadow Realm Leaderboard
+              </div>
+              <Badge variant="outline" className="ml-2">
+                Real-time
+              </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-              </div>
-            ) : rankings.length === 0 ? (
-              <p className="text-center py-8 text-slate-500 dark:text-slate-400">
-                No rankings yet. Be the first to test and save a password!
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {rankings.map((ranking) => (
-                  <div 
-                    key={ranking.userId}
-                    className={`flex items-center justify-between p-4 rounded-lg ${
-                      ranking.userId === user?.id 
-                        ? "bg-primary/10 dark:bg-primary/20 border border-primary/30" 
-                        : "bg-slate-50 dark:bg-slate-700"
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center font-bold mr-4">
-                        {ranking.rank}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-slate-900 dark:text-white flex items-center">
-                          {ranking.userId === user?.id ? (
-                            <span className="text-primary">You</span>
-                          ) : (
-                            <>
-                              <User className="h-4 w-4 mr-1 opacity-70" />
-                              {ranking.displayName}
-                            </>
-                          )}
-                        </p>
-                        <div className="flex items-center mt-1">
-                          <Badge variant="outline" className={`text-xs ${getTierColor(ranking.tier)}`}>
-                            {ranking.tier}
-                          </Badge>
-                          <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">
-                            {getTierName(ranking.tier)}
+            <Tabs defaultValue="leaderboard" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="leaderboard">Global Rankings</TabsTrigger>
+                <TabsTrigger value="tiers">Tier Distribution</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="leaderboard" className="mt-0">
+                {loading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                ) : (
+                  <LeaderboardTable 
+                    initialRankings={rankings} 
+                    onRankingsChange={setRankings}
+                  />
+                )}
+              </TabsContent>
+              
+              <TabsContent value="tiers" className="mt-0">
+                <div className="space-y-4">
+                  {(["S", "A", "B", "C", "D", "E"] as const).map((tier) => {
+                    const tierUsers = rankings.filter(r => r.tier === tier);
+                    const percentage = rankings.length > 0 
+                      ? Math.round((tierUsers.length / rankings.length) * 100) 
+                      : 0;
+                    
+                    return (
+                      <div key={tier} className={`p-4 rounded-lg ${tier === "S" ? "bg-purple-50 dark:bg-purple-900/20" : tier === "A" ? "bg-indigo-50 dark:bg-indigo-900/20" : tier === "B" ? "bg-blue-50 dark:bg-blue-900/20" : tier === "C" ? "bg-green-50 dark:bg-green-900/20" : tier === "D" ? "bg-yellow-50 dark:bg-yellow-900/20" : "bg-red-50 dark:bg-red-900/20"}`}>
+                        <div className="flex justify-between items-center mb-2">
+                          <div className="flex items-center">
+                            <Badge className={getTierColor(tier)}>{tier}</Badge>
+                            <span className="ml-3 font-bold text-slate-900 dark:text-white">
+                              {getTierName(tier)}
+                            </span>
+                          </div>
+                          <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                            {tierUsers.length} player{tierUsers.length !== 1 ? 's' : ''}
                           </span>
                         </div>
+                        <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full ${tier === "S" ? "bg-purple-600" : tier === "A" ? "bg-indigo-600" : tier === "B" ? "bg-blue-600" : tier === "C" ? "bg-green-600" : tier === "D" ? "bg-yellow-600" : "bg-red-600"}`}
+                            style={{ width: `${percentage}%` }}
+                          ></div>
+                        </div>
+                        <div className="mt-1 text-right text-xs text-slate-500 dark:text-slate-400">
+                          {percentage}% of players
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xl font-bold">{ranking.score}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">score</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 
         <div className="mt-12 p-6 bg-white dark:bg-slate-800 rounded-lg shadow-lg">
           <h2 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white">
-            How Password Strength is Calculated
+            Shadow Tier System Explained
           </h2>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
@@ -498,7 +575,7 @@ const PasswordRankings = () => {
             </div>
             
             <div className="space-y-4">
-              {(["S", "A", "B", "C", "D", "E"] as RankTier[]).map((tier) => (
+              {(["S", "A", "B", "C", "D", "E"] as const).map((tier) => (
                 <div key={tier} className={`p-3 rounded-lg flex items-start ${tier === "S" ? "bg-purple-50 dark:bg-purple-900/20" : tier === "A" ? "bg-indigo-50 dark:bg-indigo-900/20" : tier === "B" ? "bg-blue-50 dark:bg-blue-900/20" : tier === "C" ? "bg-green-50 dark:bg-green-900/20" : tier === "D" ? "bg-yellow-50 dark:bg-yellow-900/20" : "bg-red-50 dark:bg-red-900/20"}`}>
                   <Badge className={getTierColor(tier)}>{tier}</Badge>
                   <div className="ml-3">

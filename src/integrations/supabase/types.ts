@@ -12,6 +12,7 @@ export type Database = {
       password_history: {
         Row: {
           created_at: string
+          daily_streak: number | null
           entropy: number
           has_common_pattern: boolean
           has_digit: boolean
@@ -20,6 +21,7 @@ export type Database = {
           has_upper: boolean
           id: string
           is_common: boolean
+          last_interaction_date: string | null
           length: number
           metadata: Json | null
           password_hash: string
@@ -28,6 +30,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          daily_streak?: number | null
           entropy: number
           has_common_pattern: boolean
           has_digit: boolean
@@ -36,6 +39,7 @@ export type Database = {
           has_upper: boolean
           id?: string
           is_common: boolean
+          last_interaction_date?: string | null
           length: number
           metadata?: Json | null
           password_hash: string
@@ -44,6 +48,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          daily_streak?: number | null
           entropy?: number
           has_common_pattern?: boolean
           has_digit?: boolean
@@ -52,6 +57,7 @@ export type Database = {
           has_upper?: boolean
           id?: string
           is_common?: boolean
+          last_interaction_date?: string | null
           length?: number
           metadata?: Json | null
           password_hash?: string
