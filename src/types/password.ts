@@ -52,4 +52,12 @@ export interface PasswordAnalysis {
     sources?: string[];
     lastBreached?: string;
   };
+  // Add achievements property
+  achievements?: Array<{
+    id: string;
+    title: string;
+    description: string;
+    rarity: "common" | "uncommon" | "rare" | "legendary";
+    icon: string;
+  }>;
 }

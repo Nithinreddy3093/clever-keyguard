@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
   Shield, Trophy, ArrowLeft, Eye, EyeOff, Flag, 
-  Zap, Target, Award, Sparkles, Gamepad2, Gift
+  Zap, Target, Award, Sparkles, Gamepad2, Gift, Lock
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -120,7 +119,6 @@ const PasswordGame = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Load user data on initial mount
   useEffect(() => {
     const storedUsername = localStorage.getItem("passwordGameUsername");
     if (storedUsername) {
@@ -132,7 +130,6 @@ const PasswordGame = () => {
       setStreak(parseInt(storedStreak, 10) || 0);
     }
     
-    // Check if streak is still valid (last update was today or yesterday)
     const lastStreakUpdate = localStorage.getItem("lastStreakUpdate");
     if (lastStreakUpdate) {
       const lastUpdate = new Date(lastStreakUpdate);
@@ -140,13 +137,11 @@ const PasswordGame = () => {
       const daysSinceUpdate = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
       
       if (daysSinceUpdate > 1) {
-        // Reset streak if more than 1 day has passed
         setStreak(0);
         localStorage.setItem("passwordStreak", "0");
       }
     }
     
-    // Check for stored achievements
     const storedAchievements = localStorage.getItem("passwordAchievements");
     if (storedAchievements) {
       try {
@@ -165,7 +160,6 @@ const PasswordGame = () => {
       }
     }
     
-    // Check for stored quests
     const storedQuests = localStorage.getItem("passwordQuests");
     if (storedQuests) {
       try {
@@ -176,7 +170,6 @@ const PasswordGame = () => {
       }
     }
     
-    // Check for passwords tested count
     const storedCount = localStorage.getItem("passwordsTestedCount");
     if (storedCount) {
       setPasswordsTestedCount(parseInt(storedCount, 10) || 0);
@@ -197,7 +190,6 @@ const PasswordGame = () => {
       const results = analyzePassword(value);
       setAnalysis(results);
       
-      // Increment passwords tested count and check for achievement
       const newCount = passwordsTestedCount + 1;
       setPasswordsTestedCount(newCount);
       localStorage.setItem("passwordsTestedCount", newCount.toString());
@@ -218,7 +210,6 @@ const PasswordGame = () => {
         });
       }
       
-      // Check if any new achievements should be unlocked
       if (results.achievements && results.achievements.length > 0) {
         let newAchievementsUnlocked = false;
         
@@ -253,12 +244,10 @@ const PasswordGame = () => {
   };
 
   const handleQuestComplete = (quest: any) => {
-    // Check if quest already completed
     if (questsCompleted.some(q => q.id === quest.id)) {
       return;
     }
     
-    // Add quest to completed list
     const completedQuest: PasswordQuestData = {
       id: quest.id,
       title: quest.title,
@@ -271,7 +260,6 @@ const PasswordGame = () => {
     setQuestsCompleted(updatedQuests);
     localStorage.setItem("passwordQuests", JSON.stringify(updatedQuests));
     
-    // Update streak if not already updated today
     const lastStreakUpdate = localStorage.getItem("lastStreakUpdate");
     const today = new Date().toDateString();
     
@@ -282,7 +270,6 @@ const PasswordGame = () => {
       localStorage.setItem("lastStreakUpdate", new Date().toISOString());
     }
     
-    // Show reward notification
     setRewardText(`You've completed the "${quest.title}" quest and earned ${quest.xp} XP!`);
     setShowReward(true);
     
@@ -327,13 +314,12 @@ const PasswordGame = () => {
     try {
       const passwordHash = crypto.SHA256(password).toString();
       
-      // Clamp score to 0-100 to satisfy valid_score constraint
       const clampedScore = Math.min(Math.max(Math.round(analysis.score * 25), 0), 100);
       
       const { error } = await supabase.from("password_history").insert({
         user_id: user.id,
         password_hash: passwordHash,
-        score: clampedScore,  // Ensure score is between 0-100
+        score: clampedScore,
         length: analysis.length,
         has_upper: analysis.hasUpper,
         has_lower: analysis.hasLower,
@@ -614,7 +600,6 @@ const PasswordGame = () => {
         )}
       </div>
       
-      {/* Achievement dialog */}
       <Dialog open={!!selectedAchievement} onOpenChange={(open) => !open && setSelectedAchievement(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -659,7 +644,6 @@ const PasswordGame = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Reward notification dialog */}
       <Dialog open={showReward} onOpenChange={setShowReward}>
         <DialogContent className="max-w-sm">
           <div className="text-center">
