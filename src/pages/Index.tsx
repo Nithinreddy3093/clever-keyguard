@@ -61,10 +61,13 @@ const Index = () => {
       
       const passwordHash = crypto.SHA256(password).toString();
       
+      // Ensure score is within 0-100 range
+      const clampedScore = Math.min(Math.max(Math.round(analysis.score * 25), 0), 100);
+      
       const { error } = await supabase.from("password_history").insert({
         user_id: user.id,
         password_hash: passwordHash,
-        score: analysis.score,
+        score: clampedScore, // Use clamped score instead of raw score
         length: analysis.length,
         has_upper: analysis.hasUpper,
         has_lower: analysis.hasLower,

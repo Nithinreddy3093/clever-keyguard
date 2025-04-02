@@ -96,7 +96,6 @@ const PasswordRankings = () => {
         return;
       }
 
-      // Get unique users with their highest score
       const userMap = new Map<string, { score: number, displayName: string }>();
       
       passwordData.forEach((entry) => {
@@ -115,7 +114,6 @@ const PasswordRankings = () => {
         }
       });
 
-      // Convert to rankings array with properly typed change property
       const rankingsData = Array.from(userMap.entries()).map(([userId, data], index) => ({
         userId,
         displayName: data.displayName,
@@ -197,10 +195,12 @@ const PasswordRankings = () => {
     try {
       const passwordHash = crypto.SHA256(password).toString();
       
+      const clampedScore = Math.min(Math.max(Math.round(testScore), 0), 100);
+      
       const { error } = await supabase.from("password_history").insert({
         user_id: user.id,
         password_hash: passwordHash,
-        score: testScore,
+        score: clampedScore,
         length: analysis.length,
         has_upper: analysis.hasUpper,
         has_lower: analysis.hasLower,
@@ -216,7 +216,7 @@ const PasswordRankings = () => {
       
       toast({
         title: "Score saved!",
-        description: `Your password strength (${testScore}) has been saved to the rankings as ${username}`,
+        description: `Your password strength (${clampedScore}) has been saved to the rankings as ${username}`,
       });
       
       setSavedToRankings(true);
