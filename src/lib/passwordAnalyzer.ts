@@ -221,6 +221,80 @@ const calculateScore = (analysis: {
   return Math.min(4, Math.round(score));
 };
 
+// Check for achievements that can be unlocked
+const checkForAchievements = (password: string, analysis: {
+  length: number;
+  hasUpper: boolean;
+  hasLower: boolean;
+  hasDigit: boolean;
+  hasSpecial: boolean;
+  entropy: number;
+  score: number;
+  isCommon: boolean;
+  hasCommonPattern: boolean;
+  mlPatterns: ReturnType<typeof detectPatterns>;
+  crackTimeEstimates?: Record<string, { timeInSeconds: number }>;
+}) => {
+  const achievements = [];
+  
+  // Cryptographer - High entropy achievement
+  if (analysis.entropy >= 100) {
+    achievements.push({
+      id: "cryptographer",
+      title: "The Cryptographer",
+      description: "Created a password with 100+ bits of entropy",
+      rarity: "rare",
+      icon: "🔐"
+    });
+  }
+  
+  // Hacker's Nightmare - Super strong password
+  if (analysis.crackTimeEstimates && analysis.crackTimeEstimates["SHA-256 (GPU)"].timeInSeconds > 1000 * 365 * 24 * 60 * 60) {
+    achievements.push({
+      id: "hackersNightmare",
+      title: "Hacker's Nightmare",
+      description: "Generated a password unbreakable for 1,000+ years",
+      rarity: "legendary",
+      icon: "🛡️"
+    });
+  }
+  
+  // Diversity Champion - Uses all character types
+  if (analysis.hasUpper && analysis.hasLower && analysis.hasDigit && analysis.hasSpecial) {
+    achievements.push({
+      id: "diversityChamp",
+      title: "Diversity Champion",
+      description: "Used all four character types in one password",
+      rarity: "uncommon",
+      icon: "🔡"
+    });
+  }
+  
+  // Marathon Runner - Super long password
+  if (analysis.length >= 20) {
+    achievements.push({
+      id: "marathonRunner",
+      title: "Marathon Runner",
+      description: "Created a password with 20+ characters",
+      rarity: "uncommon",
+      icon: "📏"
+    });
+  }
+  
+  // Perfect Score - Maximum security score
+  if (analysis.score === 4) {
+    achievements.push({
+      id: "perfectScore",
+      title: "Perfect Score",
+      description: "Achieved the maximum password security score",
+      rarity: "rare",
+      icon: "⭐"
+    });
+  }
+  
+  return achievements;
+};
+
 export const analyzePassword = (password: string): PasswordAnalysis => {
   // Basic analysis
   const hasUpper = /[A-Z]/.test(password);
@@ -276,8 +350,6 @@ export const analyzePassword = (password: string): PasswordAnalysis => {
   // AI-enhanced password suggestion
   const aiEnhanced = enhancePassword(password, score);
   
-  // New features for Phase 1
-  
   // Calculate attack resistance scores
   const attackResistance = calculateAttackResistance(password, mlPatterns, entropy);
   
@@ -292,6 +364,21 @@ export const analyzePassword = (password: string): PasswordAnalysis => {
   // Generate passphrase suggestions (3 options)
   const passphraseSuggestions = generatePassphraseSuggestions(3);
   
+  // Check for achievements that can be unlocked
+  const achievements = checkForAchievements(password, {
+    length: password.length,
+    hasUpper,
+    hasLower,
+    hasDigit,
+    hasSpecial,
+    entropy,
+    score,
+    isCommon,
+    hasCommonPattern,
+    mlPatterns,
+    crackTimeEstimates
+  });
+  
   return {
     ...analysisObj,
     score,
@@ -299,9 +386,9 @@ export const analyzePassword = (password: string): PasswordAnalysis => {
     suggestions,
     crackTimeEstimates,
     aiEnhanced,
-    // New Phase 1 features
     attackResistance,
     hackabilityScore,
-    passphraseSuggestions
+    passphraseSuggestions,
+    achievements
   };
 };

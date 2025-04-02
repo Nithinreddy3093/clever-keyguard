@@ -10,7 +10,7 @@ import PasswordFeedback from "@/components/PasswordFeedback";
 import SecurityTips from "@/components/SecurityTips";
 import { 
   Shield, Lock, AlertTriangle, Save, Zap, KeyRound, Bot, 
-  Moon, Sun, Sparkles, Trophy, RadioTower, Sidebar
+  Moon, Sun, Sparkles, Trophy, RadioTower, Sidebar, Gamepad2
 } from "lucide-react";
 import { analyzePassword } from "@/lib/passwordAnalyzer";
 import { PasswordAnalysis } from "@/types/password";
@@ -149,6 +149,18 @@ const Index = () => {
                 </div>
                 
                 <div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg">
+                  <Link to="/password-game" className="flex flex-col">
+                    <span className="text-lg font-medium flex items-center">
+                      <Gamepad2 className="mr-2 h-5 w-5 text-primary" />
+                      Password Security Game
+                    </span>
+                    <span className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                      Complete quests, earn achievements and improve your security
+                    </span>
+                  </Link>
+                </div>
+                
+                <div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg">
                   <Link to="/service-passwords" className="flex flex-col">
                     <span className="text-lg font-medium flex items-center">
                       <RadioTower className="mr-2 h-5 w-5 text-primary" />
@@ -243,15 +255,15 @@ const Index = () => {
               </Link>
             </Button>
             <Button asChild variant="outline" className="mx-2">
-              <Link to="/service-passwords" className="flex items-center">
-                <RadioTower className="mr-2 h-4 w-4" />
-                Service Passwords
+              <Link to="/password-game" className="flex items-center">
+                <Gamepad2 className="mr-2 h-4 w-4" />
+                Password Game
               </Link>
             </Button>
             <Button asChild variant="outline" className="mx-2">
-              <Link to="/chat" className="flex items-center">
-                <Bot className="mr-2 h-4 w-4" />
-                AI Security Assistant
+              <Link to="/service-passwords" className="flex items-center">
+                <RadioTower className="mr-2 h-4 w-4" />
+                Service Passwords
               </Link>
             </Button>
           </div>
