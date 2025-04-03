@@ -1,25 +1,14 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { 
-  Gamepad2, ArrowLeft, Shield, Flag, 
-  Zap, Target, Award, Sparkles, Gift, 
-  Trophy, Crown, Globe
-} from "lucide-react";
+import { Gamepad2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { analyzePassword } from "@/lib/passwordAnalyzer";
-import PasswordQuests from "@/components/PasswordQuests";
-import SecurityDashboard from "@/components/SecurityDashboard";
-import SecretAchievements from "@/components/SecretAchievements";
 import crypto from "crypto-js";
 import useGameProgress from "@/hooks/useGameProgress";
-import PlayerProfile from "@/components/game/PlayerProfile";
-import DailyChallenges from "@/components/game/DailyChallenges";
-import PasswordTester from "@/components/game/PasswordTester";
-import Challenges from "@/components/game/Challenges";
+import GameTabs from "@/components/game/GameTabs";
 import GameDialogs from "@/components/game/GameDialogs";
 
 const PasswordGame = () => {
@@ -384,88 +373,28 @@ const PasswordGame = () => {
           <p className="text-xl text-slate-600 dark:text-slate-300">
             Complete quests, earn achievements and improve your security!
           </p>
-          
-          <PlayerProfile 
-            playerLevel={playerLevel}
-            playerXp={playerXp}
-            xpToNextLevel={xpToNextLevel}
-            streak={streak}
-            globalRank={globalRank}
-            questsCompleted={questsCompleted.length}
-          />
         </header>
         
-        <DailyChallenges
-          challenges={dailyChallenges}
+        <GameTabs
+          username={username}
+          onUsernameChange={handleUsernameChange}
+          password={password}
+          onPasswordChange={handlePasswordChange}
+          analysis={analysis}
+          streak={streak}
+          onSaveProgress={saveToSupabase}
           onChallengeComplete={handleDailyChallengeComplete}
+          dailyChallenges={dailyChallenges}
           todayCompleted={todayCompleted}
+          playerLevel={playerLevel}
+          playerXp={playerXp}
+          xpToNextLevel={xpToNextLevel}
+          globalRank={globalRank}
+          questsCompleted={questsCompleted}
+          onQuestComplete={handleQuestComplete}
+          achievements={achievements}
+          onViewAchievement={viewAchievement}
         />
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <PasswordTester 
-            username={username}
-            onUsernameChange={handleUsernameChange}
-            password={password}
-            onPasswordChange={handlePasswordChange}
-            analysis={analysis}
-            streak={streak}
-            onSaveProgress={saveToSupabase}
-          />
-          
-          {analysis && (
-            <SecurityDashboard
-              passwordScore={analysis.score}
-              passwordEntropy={analysis.entropy}
-              hasCommonPattern={analysis.hasCommonPattern}
-              isCommon={analysis.isCommon}
-              hackabilityScore={analysis.hackabilityScore}
-              passwordStreak={streak}
-              questsCompleted={questsCompleted.length}
-              totalQuests={4}
-            />
-          )}
-        </div>
-        
-        {analysis && (
-          <div className="space-y-6">
-            <PasswordQuests
-              passwordLength={analysis.length}
-              hasUpper={analysis.hasUpper}
-              hasLower={analysis.hasLower}
-              hasDigit={analysis.hasDigit}
-              hasSpecial={analysis.hasSpecial}
-              entropy={analysis.entropy}
-              score={analysis.score}
-              onQuestComplete={handleQuestComplete}
-            />
-            
-            <SecretAchievements
-              achievements={achievements.map(achievement => ({
-                ...achievement,
-                icon: (() => {
-                  switch (achievement.icon) {
-                    case "🔐": return <Zap className="h-5 w-5 text-indigo-500" />;
-                    case "🛡️": return <Shield className="h-5 w-5 text-blue-500" />;
-                    case "🔡": return <Flag className="h-5 w-5 text-green-500" />;
-                    case "📏": return <Target className="h-5 w-5 text-amber-500" />;
-                    case "⭐": return <Sparkles className="h-5 w-5 text-purple-500" />;
-                    case "🎭": return <Gift className="h-5 w-5 text-red-500" />;
-                    case "🔄": return <Trophy className="h-5 w-5 text-orange-500" />;
-                    case "🔥": return <Crown className="h-5 w-5 text-amber-500" />;
-                    case "🌎": return <Globe className="h-5 w-5 text-indigo-500" />;
-                    default: return <Award className="h-5 w-5 text-primary" />;
-                  }
-                })()
-              }))}
-              onViewAchievement={viewAchievement}
-            />
-            
-            <Challenges 
-              analysis={analysis}
-              streak={streak}
-            />
-          </div>
-        )}
       </div>
       
       <GameDialogs 
