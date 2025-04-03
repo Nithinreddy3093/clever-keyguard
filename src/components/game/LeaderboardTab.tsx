@@ -2,11 +2,12 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Crown, Award, ArrowUp, ArrowDown, Minus } from "lucide-react";
+import { Trophy, Crown, Award, ArrowUp, ArrowDown, Minus, Search } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
 
 export interface LeaderboardEntry {
   userId: string;
@@ -45,6 +46,8 @@ const getTierName = (tier: string): string => {
 const LeaderboardTab = () => {
   const [rankings, setRankings] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredRankings, setFilteredRankings] = useState<LeaderboardEntry[]>([]);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -72,12 +75,27 @@ const LeaderboardTab = () => {
     };
   }, []);
 
+  // Filter rankings when search query changes
+  useEffect(() => {
+    if (!searchQuery) {
+      setFilteredRankings(rankings);
+      return;
+    }
+    
+    const lowercaseQuery = searchQuery.toLowerCase();
+    const filtered = rankings.filter(entry => 
+      entry.displayName.toLowerCase().includes(lowercaseQuery)
+    );
+    
+    setFilteredRankings(filtered);
+  }, [searchQuery, rankings]);
+
   const fetchLeaderboardData = async () => {
     setLoading(true);
     try {
       const { data: passwordData, error } = await supabase
         .from("password_history")
-        .select("user_id, score, metadata, daily_streak")
+        .select("user_id, score, metadata, daily_streak, password_hash")
         .order("score", { ascending: false });
 
       if (error) {
@@ -130,6 +148,7 @@ const LeaderboardTab = () => {
       });
 
       setRankings(leaderboardData);
+      setFilteredRankings(leaderboardData);
     } catch (error) {
       console.error("Error fetching leaderboard:", error);
     } finally {
@@ -153,6 +172,15 @@ const LeaderboardTab = () => {
           <Trophy className="mr-2 h-5 w-5 text-amber-500" />
           Password Security Leaderboard
         </CardTitle>
+        <div className="relative mt-2">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search players by name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -176,14 +204,14 @@ const LeaderboardTab = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rankings.length === 0 ? (
+                {filteredRankings.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
-                      No rankings yet. Be the first to submit your score!
+                      {searchQuery ? "No players found with that name." : "No rankings yet. Be the first to submit your score!"}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  rankings.map((ranking) => (
+                  filteredRankings.map((ranking) => (
                     <TableRow 
                       key={ranking.userId}
                       className={ranking.userId === user?.id ? "bg-primary/10" : ""}

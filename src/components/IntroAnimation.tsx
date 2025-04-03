@@ -69,7 +69,7 @@ const IntroAnimation = () => {
               className={`text-4xl font-bold transition-opacity duration-1000 ${animationPhase >= 2 ? "opacity-100" : "opacity-0"}`}
               style={{ transition: "opacity 1.5s ease" }}
             >
-              <span className="text-primary">PASS</span>GUARD
+              <span className="text-primary">PASSWORD</span> STRENGTH ANALYZER
             </h1>
           </div>
         </div>
@@ -82,8 +82,8 @@ const IntroAnimation = () => {
           Your first line of defense
         </p>
         
-        {/* Tap instruction */}
-        <p className="absolute bottom-10 left-0 right-0 text-center text-sm text-gray-400 animate-pulse">
+        {/* Tap instruction - moved to bottom of screen with more space */}
+        <p className="absolute bottom-16 left-0 right-0 text-center text-sm text-gray-400 animate-pulse">
           Tap anywhere to continue
         </p>
       </div>
