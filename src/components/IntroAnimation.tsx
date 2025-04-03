@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from "react";
 import { Shield, Lock } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
 const IntroAnimation = () => {
@@ -37,7 +36,7 @@ const IntroAnimation = () => {
     return () => phaseTimers.forEach(timer => clearTimeout(timer));
   }, [showIntro]);
 
-  // Skip animation
+  // Skip animation when user taps anywhere
   const skipIntro = () => {
     setFadeOut(true);
     setTimeout(() => {
@@ -52,6 +51,7 @@ const IntroAnimation = () => {
     <div 
       className={`fixed inset-0 z-50 flex items-center justify-center bg-black text-white overflow-hidden transition-opacity duration-1500 ${fadeOut ? 'opacity-0' : 'opacity-100'}`}
       style={{ transition: "opacity 1.5s ease" }}
+      onClick={skipIntro} // Skip on tap anywhere
     >
       <div className="relative z-20 max-w-lg px-6 py-10 text-center">
         {/* Logo animation */}
@@ -81,16 +81,11 @@ const IntroAnimation = () => {
         >
           Your first line of defense
         </p>
-
-        {/* Skip button */}
-        <Button 
-          onClick={skipIntro} 
-          variant="ghost"
-          size="sm"
-          className="absolute bottom-6 right-6 text-gray-400 hover:text-white hover:bg-transparent"
-        >
-          Skip
-        </Button>
+        
+        {/* Tap instruction */}
+        <p className="absolute bottom-10 left-0 right-0 text-center text-sm text-gray-400 animate-pulse">
+          Tap anywhere to continue
+        </p>
       </div>
     </div>
   );

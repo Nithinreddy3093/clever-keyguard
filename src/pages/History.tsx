@@ -1,10 +1,10 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Trash2, ArrowLeft } from "lucide-react";
+import { Shield, Trash2, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import StrengthMeter from "@/components/StrengthMeter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -22,6 +22,7 @@ interface PasswordHistoryItem {
   is_common: boolean;
   has_common_pattern: boolean;
   entropy: number;
+  password_hash: string;
 }
 
 const History = () => {
@@ -29,6 +30,8 @@ const History = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+  const [decryptedPasswords, setDecryptedPasswords] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!user) {
@@ -84,6 +87,14 @@ const History = () => {
     }
   };
 
+  const togglePasswordVisibility = (id: string) => {
+    setVisiblePasswords(prev => {
+      const newState = { ...prev };
+      newState[id] = !prev[id];
+      return newState;
+    });
+  };
+
   if (!user) {
     return <Navigate to="/auth" />;
   }
@@ -133,6 +144,14 @@ const History = () => {
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={() => togglePasswordVisibility(item.id)}
+                      aria-label={visiblePasswords[item.id] ? "Hide password" : "Show password"}
+                    >
+                      {visiblePasswords[item.id] ? <EyeOff className="h-4 w-4 text-slate-500" /> : <Eye className="h-4 w-4 text-slate-500" />}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => handleDelete(item.id)}
                       aria-label="Delete"
                     >
@@ -142,6 +161,19 @@ const History = () => {
                 </CardHeader>
                 <CardContent>
                   <StrengthMeter score={item.score} />
+                  
+                  {visiblePasswords[item.id] && (
+                    <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                      <p className="text-center font-mono text-lg">
+                        {/* This would be the actual password if we had it; showing hash for now */}
+                        Password Hash: {item.password_hash?.substring(0, 16)}...
+                      </p>
+                      <p className="text-xs text-center text-slate-500 mt-1">
+                        Note: For security reasons, we only store password hashes, not actual passwords
+                      </p>
+                    </div>
+                  )}
+
                   <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <h3 className="font-medium text-slate-900 dark:text-white">Characteristics</h3>
