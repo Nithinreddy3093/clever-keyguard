@@ -1,7 +1,8 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getTierForScore } from "./utils";
+import { useToast } from "@/hooks/use-toast";
 
 export interface LeaderboardEntry {
   userId: string;
@@ -16,7 +17,9 @@ export interface LeaderboardEntry {
 export const useLeaderboardData = () => {
   const [rankings, setRankings] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [previousRankings, setPreviousRankings] = useState<Map<string, number>>(new Map());
+  const previousRankingsRef = useRef(new Map<string, number>());
+  const { toast } = useToast();
+  const channelRef = useRef<any>(null);
   
   const fetchLeaderboardData = async () => {
     setLoading(true);
@@ -38,10 +41,11 @@ export const useLeaderboardData = () => {
       }
 
       // Create a map of previous rankings to track changes
-      const newPreviousRankings = new Map<string, number>();
-      rankings.forEach((entry, index) => {
-        newPreviousRankings.set(entry.userId, index + 1);
+      const previousRankings = new Map<string, number>();
+      rankings.forEach((entry) => {
+        previousRankings.set(entry.userId, entry.rank);
       });
+      previousRankingsRef.current = previousRankings;
       
       const userMap = new Map<string, { score: number, displayName: string, streak?: number }>();
       
@@ -91,7 +95,6 @@ export const useLeaderboardData = () => {
         };
       });
 
-      setPreviousRankings(newPreviousRankings);
       setRankings(leaderboardData);
     } catch (error) {
       console.error("Error fetching leaderboard:", error);
@@ -104,6 +107,7 @@ export const useLeaderboardData = () => {
   useEffect(() => {
     fetchLeaderboardData();
     
+    // Create a channel for real-time updates
     const channel = supabase
       .channel('public:password_history')
       .on(
@@ -116,12 +120,31 @@ export const useLeaderboardData = () => {
         (payload) => {
           console.log("Realtime update received:", payload);
           fetchLeaderboardData();
+          
+          // Show toast notification for updates
+          if (payload.eventType === 'INSERT') {
+            toast({
+              title: "New player joined!",
+              description: "Someone new has entered the Shadow Realm.",
+              duration: 3000,
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            toast({
+              title: "Rankings updated",
+              description: "A player's score has changed.",
+              duration: 2000,
+            });
+          }
         }
       )
       .subscribe();
+      
+    channelRef.current = channel;
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+      }
     };
   }, []);
 

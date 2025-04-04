@@ -25,15 +25,15 @@ const LeaderboardRow = ({ ranking, currentUser, getTierColor, getTierName }: Lea
   return (
     <TableRow 
       key={ranking.userId}
-      className={`${ranking.userId === currentUser?.id ? "bg-primary/10" : ""} ${getRankAnimation(ranking.change)}`}
+      className={`${ranking.userId === currentUser?.id ? "bg-primary/10" : ""} ${getRankAnimation(ranking.change)} transition-all duration-300 ease-in-out`}
     >
       <TableCell className="font-medium">
         <div className="flex items-center">
           <div className={`w-8 h-8 rounded-full ${ranking.rank <= 3 ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-slate-200 dark:bg-slate-700'} flex items-center justify-center font-bold mr-2 transition-all duration-300`}>
             {ranking.rank}
           </div>
-          {ranking.change === "up" && <TrendingUp className="h-4 w-4 text-green-500 animate-fade-in" />}
-          {ranking.change === "down" && <TrendingDown className="h-4 w-4 text-red-500 animate-fade-in" />}
+          {ranking.change === "up" && <TrendingUp className="h-4 w-4 text-green-500 animate-pulse" />}
+          {ranking.change === "down" && <TrendingDown className="h-4 w-4 text-red-500 animate-pulse" />}
           {ranking.change === "same" && <Minus className="h-4 w-4 text-slate-400" />}
         </div>
       </TableCell>
@@ -51,7 +51,7 @@ const LeaderboardRow = ({ ranking, currentUser, getTierColor, getTierName }: Lea
       </TableCell>
       <TableCell>
         <Badge 
-          className={`${getTierColor(ranking.tier)} text-white`}
+          className={`${getTierColor(ranking.tier)} text-white transition-colors duration-300`}
           title={getTierName(ranking.tier)}
         >
           {ranking.tier}

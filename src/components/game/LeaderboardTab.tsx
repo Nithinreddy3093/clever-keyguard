@@ -28,13 +28,16 @@ const LeaderboardTab = () => {
           description: "Someone new has joined the Shadow Realm rankings.",
           duration: 3000,
         });
-      } else {
-        // Rankings changed but not a new player
-        toast({
-          title: "Rankings updated",
-          description: "The Shadow Realm rankings have been updated.",
-          duration: 2000,
-        });
+      } else if (rankings.length === previousRankingsCount.current) {
+        // Same number of players but rankings may have changed
+        const changedRankings = rankings.filter(r => r.change !== "same");
+        if (changedRankings.length > 0) {
+          toast({
+            title: "Rankings shifted",
+            description: "Players have moved positions in the Shadow Realm.",
+            duration: 2000,
+          });
+        }
       }
     }
     
