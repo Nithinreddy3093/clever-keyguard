@@ -48,6 +48,7 @@ const LeaderboardTab = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredRankings, setFilteredRankings] = useState<LeaderboardEntry[]>([]);
+  const [previousRankings, setPreviousRankings] = useState<Map<string, number>>(new Map());
   const { user } = useAuth();
 
   useEffect(() => {
@@ -109,6 +110,12 @@ const LeaderboardTab = () => {
         return;
       }
 
+      // Create a map of previous rankings to track changes
+      const newPreviousRankings = new Map<string, number>();
+      rankings.forEach((entry, index) => {
+        newPreviousRankings.set(entry.userId, index + 1);
+      });
+      
       const userMap = new Map<string, { score: number, displayName: string, streak?: number }>();
       
       passwordData.forEach((entry) => {
@@ -136,17 +143,28 @@ const LeaderboardTab = () => {
       });
 
       const leaderboardData = Array.from(userMap.entries()).map(([userId, data], index) => {
+        const rank = index + 1;
+        const previousRank = previousRankings.get(userId) || rank;
+        
+        let change: "up" | "down" | "same" = "same";
+        if (previousRank < rank) {
+          change = "down";
+        } else if (previousRank > rank) {
+          change = "up";
+        }
+        
         return {
           userId,
           displayName: data.displayName,
           score: data.score,
           tier: getTierForScore(data.score),
-          rank: index + 1,
-          change: "same" as const,
+          rank,
+          change,
           streak: data.streak
         };
       });
 
+      setPreviousRankings(newPreviousRankings);
       setRankings(leaderboardData);
       setFilteredRankings(leaderboardData);
     } catch (error) {

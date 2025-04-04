@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Trophy, Target, Award } from "lucide-react";
+import { Shield, Trophy, Target, Award, Gamepad2 } from "lucide-react";
 import PlayerProfile from "./PlayerProfile";
 import DailyChallenges from "./DailyChallenges";
 import PasswordTester from "./PasswordTester";
@@ -11,6 +11,7 @@ import { DailyChallenge } from "./DailyChallenges";
 import SecurityDashboard from "@/components/SecurityDashboard";
 import PasswordQuests from "@/components/PasswordQuests";
 import SecretAchievements from "@/components/SecretAchievements";
+import PasswordGames from "./PasswordGames";
 import { AchievementData } from "@/hooks/useGameProgress";
 
 interface GameTabsProps {
@@ -58,7 +59,7 @@ const GameTabs = ({
   
   return (
     <Tabs defaultValue="game" className="w-full" onValueChange={setActiveTab}>
-      <TabsList className="grid grid-cols-3 mb-6">
+      <TabsList className="grid grid-cols-4 mb-6">
         <TabsTrigger value="game" className="flex items-center">
           <Shield className="mr-2 h-4 w-4" />
           Password Game
@@ -66,6 +67,10 @@ const GameTabs = ({
         <TabsTrigger value="challenges" className="flex items-center">
           <Target className="mr-2 h-4 w-4" />
           Challenges
+        </TabsTrigger>
+        <TabsTrigger value="minigames" className="flex items-center">
+          <Gamepad2 className="mr-2 h-4 w-4" />
+          Games
         </TabsTrigger>
         <TabsTrigger value="leaderboard" className="flex items-center">
           <Trophy className="mr-2 h-4 w-4" />
@@ -161,6 +166,10 @@ const GameTabs = ({
             </p>
           </div>
         )}
+      </TabsContent>
+      
+      <TabsContent value="minigames" className="mt-0">
+        <PasswordGames />
       </TabsContent>
       
       <TabsContent value="leaderboard" className="mt-0">
