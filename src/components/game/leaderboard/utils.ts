@@ -45,8 +45,8 @@ export const getGlowColor = (tier: string): string => {
 };
 
 export const getScoreChangeClass = (change: "up" | "down" | "same"): string => {
-  if (change === "up") return "text-green-500 animate-pulse transition-colors duration-300";
-  if (change === "down") return "text-red-500 animate-pulse transition-colors duration-300";
+  if (change === "up") return "text-green-600 dark:text-green-400 font-medium animate-pulse transition-colors duration-300";
+  if (change === "down") return "text-red-600 dark:text-red-400 font-medium animate-pulse transition-colors duration-300";
   return "";
 };
 
@@ -54,4 +54,41 @@ export const getRankAnimation = (change: "up" | "down" | "same"): string => {
   if (change === "up") return "animate-fade-in bg-green-50/30 dark:bg-green-900/10 border-l-2 border-green-500";
   if (change === "down") return "animate-fade-in bg-red-50/30 dark:bg-red-900/10 border-l-2 border-red-500";
   return "";
+};
+
+// New utility functions for improved leaderboard
+export const getProfileColor = (tier: string): string => {
+  const colors: Record<string, string> = {
+    "S": "from-purple-500/20 to-purple-700/10",
+    "A": "from-indigo-500/20 to-indigo-700/10",
+    "B": "from-blue-500/20 to-blue-700/10",
+    "C": "from-green-500/20 to-green-700/10",
+    "D": "from-yellow-500/20 to-yellow-700/10",
+    "E": "from-red-500/20 to-red-700/10"
+  };
+  return colors[tier] || "from-slate-500/20 to-slate-700/10";
+};
+
+export const getTierBorderColor = (tier: string): string => {
+  const colors: Record<string, string> = {
+    "S": "border-purple-300 dark:border-purple-700",
+    "A": "border-indigo-300 dark:border-indigo-700",
+    "B": "border-blue-300 dark:border-blue-700",
+    "C": "border-green-300 dark:border-green-700",
+    "D": "border-yellow-300 dark:border-yellow-700",
+    "E": "border-red-300 dark:border-red-700"
+  };
+  return colors[tier] || "border-slate-300 dark:border-slate-700";
+};
+
+export const getTierTextColor = (tier: string): string => {
+  const colors: Record<string, string> = {
+    "S": "text-purple-700 dark:text-purple-300",
+    "A": "text-indigo-700 dark:text-indigo-300",
+    "B": "text-blue-700 dark:text-blue-300",
+    "C": "text-green-700 dark:text-green-300",
+    "D": "text-yellow-700 dark:text-yellow-300",
+    "E": "text-red-700 dark:text-red-300"
+  };
+  return colors[tier] || "text-slate-700 dark:text-slate-300";
 };

@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { User } from "@supabase/supabase-js";
 import LeaderboardEmptyState from "./LeaderboardEmptyState";
 import LeaderboardRow from "./LeaderboardRow";
+import { motion } from "framer-motion";
 
 interface LeaderboardTableProps {
   filteredRankings: Array<{
@@ -29,28 +30,29 @@ const LeaderboardTable = ({
   getTierName
 }: LeaderboardTableProps) => {
   return (
-    <div className="overflow-hidden rounded-lg border">
+    <div className="overflow-hidden rounded-lg border shadow-sm">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead className="w-16">Rank</TableHead>
-            <TableHead>Player</TableHead>
-            <TableHead>Tier</TableHead>
-            <TableHead className="text-right">Score</TableHead>
-            <TableHead className="text-right">Streak</TableHead>
+          <TableRow className="bg-slate-50 dark:bg-slate-800/70">
+            <TableHead className="w-16 font-semibold">Rank</TableHead>
+            <TableHead className="font-semibold">Player</TableHead>
+            <TableHead className="font-semibold">Tier</TableHead>
+            <TableHead className="text-right font-semibold">Score</TableHead>
+            <TableHead className="text-right font-semibold">Streak</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filteredRankings.length === 0 ? (
             <LeaderboardEmptyState searchQuery={searchQuery} />
           ) : (
-            filteredRankings.map((ranking) => (
+            filteredRankings.map((ranking, index) => (
               <LeaderboardRow 
                 key={ranking.userId}
                 ranking={ranking}
                 currentUser={currentUser}
                 getTierColor={getTierColor}
                 getTierName={getTierName}
+                animationDelay={index}
               />
             ))
           )}

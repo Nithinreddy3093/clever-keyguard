@@ -9,17 +9,20 @@ const LeaderboardLoading = () => {
         <div 
           key={item} 
           className="flex items-center p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 animate-pulse"
-          style={{ animationDelay: `${item * 100}ms` }}
+          style={{ 
+            animationDelay: `${item * 100}ms`,
+            opacity: 1 - (item * 0.15) // Top items more visible
+          }}
         >
           <div className="flex items-center gap-2 w-24">
-            <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
+            <div className={`h-8 w-8 rounded-full flex items-center justify-center border ${
               item === 1 
-                ? 'bg-amber-200/50 dark:bg-amber-800/30' 
+                ? 'bg-amber-200/50 dark:bg-amber-800/30 border-amber-300/30' 
                 : item === 2 
-                  ? 'bg-slate-300/70 dark:bg-slate-600/50'
+                  ? 'bg-slate-300/70 dark:bg-slate-600/50 border-slate-400/30'
                   : item === 3
-                    ? 'bg-slate-200/70 dark:bg-slate-700/40'
-                    : 'bg-slate-200/70 dark:bg-slate-700/50'
+                    ? 'bg-amber-100/70 dark:bg-amber-900/30 border-amber-200/30'
+                    : 'bg-slate-200/70 dark:bg-slate-700/50 border-slate-300/30'
             }`}>
               <Skeleton className="h-5 w-3 rounded" />
             </div>

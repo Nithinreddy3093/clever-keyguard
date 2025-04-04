@@ -3,8 +3,9 @@ import React from "react";
 import { User } from "@supabase/supabase-js";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUp, ArrowDown, Minus, Crown, Award, TrendingUp, TrendingDown } from "lucide-react";
-import { getScoreChangeClass, getRankAnimation } from "./utils";
+import { TrendingUp, TrendingDown, Minus, Crown, Award, User as UserIcon } from "lucide-react";
+import { getScoreChangeClass, getRankAnimation, getGlowColor } from "./utils";
+import { motion } from "framer-motion";
 
 interface LeaderboardRowProps {
   ranking: {
@@ -19,17 +20,47 @@ interface LeaderboardRowProps {
   currentUser: User | null;
   getTierColor: (tier: string) => string;
   getTierName: (tier: string) => string;
+  animationDelay?: number;
 }
 
-const LeaderboardRow = ({ ranking, currentUser, getTierColor, getTierName }: LeaderboardRowProps) => {
+const LeaderboardRow = ({ 
+  ranking, 
+  currentUser, 
+  getTierColor, 
+  getTierName,
+  animationDelay = 0
+}: LeaderboardRowProps) => {
+  const isCurrentUser = ranking.userId === currentUser?.id;
+  const isTopThree = ranking.rank <= 3;
+  const rankBgClass = isTopThree 
+    ? ranking.rank === 1 
+      ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700/50' 
+      : ranking.rank === 2 
+        ? 'bg-slate-200 dark:bg-slate-700 border-slate-300 dark:border-slate-600/50' 
+        : 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50'
+    : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700/50';
+
   return (
     <TableRow 
-      key={ranking.userId}
-      className={`${ranking.userId === currentUser?.id ? "bg-primary/10" : ""} ${getRankAnimation(ranking.change)} transition-all duration-300 ease-in-out`}
+      className={`
+        ${isCurrentUser ? "bg-primary/5 dark:bg-primary/10" : ""} 
+        ${getRankAnimation(ranking.change)}
+        transition-all duration-500 ease-in-out hover:bg-slate-100 dark:hover:bg-slate-800/60
+      `}
+      style={{ 
+        animationDelay: `${animationDelay * 100}ms`,
+      }}
     >
       <TableCell className="font-medium">
         <div className="flex items-center">
-          <div className={`w-8 h-8 rounded-full ${ranking.rank <= 3 ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-slate-200 dark:bg-slate-700'} flex items-center justify-center font-bold mr-2 transition-all duration-300`}>
+          <div className={`
+            w-8 h-8 rounded-full 
+            ${rankBgClass}
+            flex items-center justify-center font-bold mr-2 
+            border transition-all duration-300
+            ${isTopThree ? 'shadow-sm' : ''}
+            ${ranking.rank === 1 ? `${getGlowColor(ranking.tier)} animate-pulse` : ''}
+          `}>
             {ranking.rank}
           </div>
           {ranking.change === "up" && <TrendingUp className="h-4 w-4 text-green-500 animate-pulse" />}
@@ -42,10 +73,13 @@ const LeaderboardRow = ({ ranking, currentUser, getTierColor, getTierName }: Lea
           {ranking.rank === 1 && (
             <Crown className="h-4 w-4 mr-1 text-amber-500" />
           )}
-          {ranking.userId === currentUser?.id ? (
+          {isCurrentUser ? (
             <span className="text-primary font-medium">You</span>
           ) : (
-            <span className={getScoreChangeClass(ranking.change)}>{ranking.displayName}</span>
+            <div className="flex items-center">
+              <UserIcon className="h-4 w-4 mr-1 text-slate-400" />
+              <span className={getScoreChangeClass(ranking.change)}>{ranking.displayName}</span>
+            </div>
           )}
         </div>
       </TableCell>
@@ -58,18 +92,20 @@ const LeaderboardRow = ({ ranking, currentUser, getTierColor, getTierName }: Lea
         </Badge>
       </TableCell>
       <TableCell className="text-right font-semibold">
-        <span className={getScoreChangeClass(ranking.change)}>
+        <span className={`${getScoreChangeClass(ranking.change)} transition-all duration-300`}>
           {ranking.score}
         </span>
       </TableCell>
       <TableCell className="text-right">
         {ranking.streak ? (
           <div className="flex items-center justify-end">
-            <Award className="h-4 w-4 text-amber-500 mr-1" />
-            <span>{ranking.streak} days</span>
+            <Award className={`h-4 w-4 mr-1 ${ranking.streak >= 7 ? 'text-amber-500' : 'text-slate-400'}`} />
+            <span className={ranking.streak >= 7 ? 'font-medium' : ''}>
+              {ranking.streak} day{ranking.streak !== 1 ? 's' : ''}
+            </span>
           </div>
         ) : (
-          <span>0 days</span>
+          <span className="text-slate-400">0 days</span>
         )}
       </TableCell>
     </TableRow>

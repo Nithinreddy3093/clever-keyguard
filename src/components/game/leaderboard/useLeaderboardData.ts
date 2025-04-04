@@ -20,9 +20,14 @@ export const useLeaderboardData = () => {
   const previousRankingsRef = useRef(new Map<string, number>());
   const { toast } = useToast();
   const channelRef = useRef<any>(null);
+  const updateQueueRef = useRef<boolean>(false);
   
   const fetchLeaderboardData = async () => {
+    if (updateQueueRef.current) return; // Skip if already processing an update
+    
+    updateQueueRef.current = true;
     setLoading(true);
+    
     try {
       const { data: passwordData, error } = await supabase
         .from("password_history")
@@ -32,11 +37,13 @@ export const useLeaderboardData = () => {
       if (error) {
         console.error("Error fetching leaderboard data:", error);
         setLoading(false);
+        updateQueueRef.current = false;
         return;
       }
 
       if (!passwordData || !Array.isArray(passwordData)) {
         setLoading(false);
+        updateQueueRef.current = false;
         return;
       }
 
@@ -100,6 +107,10 @@ export const useLeaderboardData = () => {
       console.error("Error fetching leaderboard:", error);
     } finally {
       setLoading(false);
+      // Allow next update after a short delay to prevent rapid refetches
+      setTimeout(() => {
+        updateQueueRef.current = false;
+      }, 300);
     }
   };
 
@@ -109,7 +120,7 @@ export const useLeaderboardData = () => {
     
     // Create a channel for real-time updates
     const channel = supabase
-      .channel('public:password_history')
+      .channel('shadow-realm-leaderboard')
       .on(
         'postgres_changes',
         {
@@ -121,18 +132,12 @@ export const useLeaderboardData = () => {
           console.log("Realtime update received:", payload);
           fetchLeaderboardData();
           
-          // Show toast notification for updates
+          // Only show toast for certain update types to reduce notification spam
           if (payload.eventType === 'INSERT') {
             toast({
-              title: "New player joined!",
+              title: "New challenger!",
               description: "Someone new has entered the Shadow Realm.",
               duration: 3000,
-            });
-          } else if (payload.eventType === 'UPDATE') {
-            toast({
-              title: "Rankings updated",
-              description: "A player's score has changed.",
-              duration: 2000,
             });
           }
         }
