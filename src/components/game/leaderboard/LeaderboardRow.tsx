@@ -3,7 +3,8 @@ import React from "react";
 import { User } from "@supabase/supabase-js";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUp, ArrowDown, Minus, Crown, Award } from "lucide-react";
+import { ArrowUp, ArrowDown, Minus, Crown, Award, TrendingUp, TrendingDown } from "lucide-react";
+import { getScoreChangeClass, getRankAnimation } from "./utils";
 
 interface LeaderboardRowProps {
   ranking: {
@@ -24,25 +25,27 @@ const LeaderboardRow = ({ ranking, currentUser, getTierColor, getTierName }: Lea
   return (
     <TableRow 
       key={ranking.userId}
-      className={ranking.userId === currentUser?.id ? "bg-primary/10" : ""}
+      className={`${ranking.userId === currentUser?.id ? "bg-primary/10" : ""} ${getRankAnimation(ranking.change)}`}
     >
       <TableCell className="font-medium">
         <div className="flex items-center">
-          <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold mr-2">
+          <div className={`w-8 h-8 rounded-full ${ranking.rank <= 3 ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-slate-200 dark:bg-slate-700'} flex items-center justify-center font-bold mr-2 transition-all duration-300`}>
             {ranking.rank}
           </div>
-          {ranking.change === "up" && <ArrowUp className="h-4 w-4 text-green-500" />}
-          {ranking.change === "down" && <ArrowDown className="h-4 w-4 text-red-500" />}
+          {ranking.change === "up" && <TrendingUp className="h-4 w-4 text-green-500 animate-fade-in" />}
+          {ranking.change === "down" && <TrendingDown className="h-4 w-4 text-red-500 animate-fade-in" />}
           {ranking.change === "same" && <Minus className="h-4 w-4 text-slate-400" />}
         </div>
       </TableCell>
       <TableCell>
         <div className="flex items-center">
-          {ranking.rank === 1 && <Crown className="h-4 w-4 mr-1 text-amber-500" />}
+          {ranking.rank === 1 && (
+            <Crown className="h-4 w-4 mr-1 text-amber-500" />
+          )}
           {ranking.userId === currentUser?.id ? (
             <span className="text-primary font-medium">You</span>
           ) : (
-            <span>{ranking.displayName}</span>
+            <span className={getScoreChangeClass(ranking.change)}>{ranking.displayName}</span>
           )}
         </div>
       </TableCell>
@@ -55,7 +58,9 @@ const LeaderboardRow = ({ ranking, currentUser, getTierColor, getTierName }: Lea
         </Badge>
       </TableCell>
       <TableCell className="text-right font-semibold">
-        {ranking.score}
+        <span className={getScoreChangeClass(ranking.change)}>
+          {ranking.score}
+        </span>
       </TableCell>
       <TableCell className="text-right">
         {ranking.streak ? (

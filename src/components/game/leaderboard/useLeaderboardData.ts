@@ -113,7 +113,8 @@ export const useLeaderboardData = () => {
           schema: 'public',
           table: 'password_history'
         },
-        () => {
+        (payload) => {
+          console.log("Realtime update received:", payload);
           fetchLeaderboardData();
         }
       )

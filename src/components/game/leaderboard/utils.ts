@@ -45,13 +45,13 @@ export const getGlowColor = (tier: string): string => {
 };
 
 export const getScoreChangeClass = (change: "up" | "down" | "same"): string => {
-  if (change === "up") return "animate-fade-in text-green-500";
-  if (change === "down") return "animate-fade-in text-red-500";
+  if (change === "up") return "text-green-500 animate-fade-in";
+  if (change === "down") return "text-red-500 animate-fade-in";
   return "";
 };
 
 export const getRankAnimation = (change: "up" | "down" | "same"): string => {
-  if (change === "up") return "animate-fade-in";
-  if (change === "down") return "animate-fade-in";
+  if (change === "up") return "animate-fade-in bg-green-50/30 dark:bg-green-900/10";
+  if (change === "down") return "animate-fade-in bg-red-50/30 dark:bg-red-900/10";
   return "";
 };

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import LeaderboardHeader from "./leaderboard/LeaderboardHeader";
@@ -15,14 +15,34 @@ const LeaderboardTab = () => {
   const { rankings, loading, fetchLeaderboardData } = useLeaderboardData();
   const { user } = useAuth();
   const { toast } = useToast();
-
+  const isInitialLoad = useRef(true);
+  const previousRankingsCount = useRef(0);
+  
   // Real-time update notification
   useEffect(() => {
-    // Only show toast when rankings update after initial load
-    let isInitialLoad = true;
+    if (!loading && rankings.length > 0 && !isInitialLoad.current) {
+      // Only show toast after initial load when rankings update
+      if (rankings.length > previousRankingsCount.current) {
+        toast({
+          title: "New challenger appeared!",
+          description: "Someone new has joined the Shadow Realm rankings.",
+          duration: 3000,
+        });
+      } else {
+        // Rankings changed but not a new player
+        toast({
+          title: "Rankings updated",
+          description: "The Shadow Realm rankings have been updated.",
+          duration: 2000,
+        });
+      }
+    }
     
-    return () => { isInitialLoad = false; };
-  }, []);
+    if (!loading) {
+      isInitialLoad.current = false;
+      previousRankingsCount.current = rankings.length;
+    }
+  }, [rankings, loading, toast]);
 
   // Filter rankings when search query changes
   useEffect(() => {
@@ -38,21 +58,6 @@ const LeaderboardTab = () => {
     
     setFilteredRankings(filtered);
   }, [searchQuery, rankings]);
-
-  // Show notification when new players join (except on initial load)
-  useEffect(() => {
-    let lastCount = 0;
-    
-    if (rankings.length > 0 && lastCount > 0 && rankings.length > lastCount) {
-      toast({
-        title: "New challenger appeared!",
-        description: "Someone new has joined the Shadow Realm rankings.",
-        duration: 3000,
-      });
-    }
-    
-    lastCount = rankings.length;
-  }, [rankings.length, toast]);
 
   // Manual refresh function
   const handleRefresh = () => {
