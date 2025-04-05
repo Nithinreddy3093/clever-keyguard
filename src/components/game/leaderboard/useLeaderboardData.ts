@@ -17,16 +17,22 @@ export interface LeaderboardEntry {
 export const useLeaderboardData = () => {
   const [rankings, setRankings] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const previousRankingsRef = useRef(new Map<string, number>());
   const { toast } = useToast();
   const channelRef = useRef<any>(null);
   const updateQueueRef = useRef<boolean>(false);
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const initialLoadRef = useRef(true);
   
   const fetchLeaderboardData = async () => {
     if (updateQueueRef.current) return; // Skip if already processing an update
     
     updateQueueRef.current = true;
-    setLoading(true);
+    if (!initialLoadRef.current) {
+      // Don't show loading state for subsequent fetches to avoid UI flicker
+      setLoading(true);
+    }
     
     try {
       const { data: passwordData, error } = await supabase
@@ -36,6 +42,7 @@ export const useLeaderboardData = () => {
 
       if (error) {
         console.error("Error fetching leaderboard data:", error);
+        setError(new Error(`Failed to load leaderboard data: ${error.message}`));
         setLoading(false);
         updateQueueRef.current = false;
         return;
@@ -103,8 +110,11 @@ export const useLeaderboardData = () => {
       });
 
       setRankings(leaderboardData);
-    } catch (error) {
+      setError(null);
+      initialLoadRef.current = false;
+    } catch (error: any) {
       console.error("Error fetching leaderboard:", error);
+      setError(new Error(`Failed to load leaderboard: ${error.message}`));
     } finally {
       setLoading(false);
       // Allow next update after a short delay to prevent rapid refetches
@@ -114,7 +124,7 @@ export const useLeaderboardData = () => {
     }
   };
 
-  // Set up subscription for real-time updates
+  // Set up subscription for real-time updates with improved debounce handling
   useEffect(() => {
     fetchLeaderboardData();
     
@@ -130,25 +140,57 @@ export const useLeaderboardData = () => {
         },
         (payload) => {
           console.log("Realtime update received:", payload);
-          fetchLeaderboardData();
           
-          // Only show toast for certain update types to reduce notification spam
-          if (payload.eventType === 'INSERT') {
-            toast({
-              title: "New challenger!",
-              description: "Someone new has entered the Shadow Realm.",
-              duration: 3000,
-            });
+          // Use debounce pattern to avoid multiple rapid updates
+          if (updateTimeoutRef.current) {
+            clearTimeout(updateTimeoutRef.current);
           }
+          
+          updateTimeoutRef.current = setTimeout(() => {
+            fetchLeaderboardData();
+            
+            // Only show toast for certain update types to reduce notification spam
+            if (payload.eventType === 'INSERT') {
+              toast({
+                title: "New challenger!",
+                description: "Someone new has entered the Shadow Realm.",
+                duration: 3000,
+              });
+            }
+            updateTimeoutRef.current = null;
+          }, 500);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to leaderboard updates');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Failed to subscribe to leaderboard updates');
+          // Attempt reconnection after delay
+          setTimeout(() => {
+            if (channelRef.current) {
+              supabase.removeChannel(channelRef.current);
+              channelRef.current = null;
+            }
+            fetchLeaderboardData();
+          }, 5000);
+        }
+      });
       
     channelRef.current = channel;
+
+    // Set up periodic refresh as a fallback
+    const refreshInterval = setInterval(() => {
+      fetchLeaderboardData();
+    }, 60000); // Refresh every minute
 
     return () => {
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
+      }
+      clearInterval(refreshInterval);
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
       }
     };
   }, []);
@@ -156,6 +198,7 @@ export const useLeaderboardData = () => {
   return {
     rankings,
     loading,
+    error,
     fetchLeaderboardData
   };
 };

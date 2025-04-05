@@ -1,10 +1,17 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, Gamepad2, TimerIcon, BrainCircuit, KeySquare, Lock, UserCheck, TerminalSquare } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import BruteForceGame from "./games/BruteForceGame";
+import PhishingGame from "./games/PhishingGame";
 
 // Game interfaces
 interface GameInfo {
@@ -18,23 +25,7 @@ interface GameInfo {
   comingSoon?: boolean;
 }
 
-// Individual game components - will be implemented in separate files
-const BruteForceGame = () => (
-  <div className="p-6 text-center">
-    <h2 className="text-2xl font-bold mb-4">Hack the Password</h2>
-    <p className="mb-6">Crack weak passwords as an ethical hacker.</p>
-    <p className="text-lg text-center text-muted-foreground">Game content coming soon!</p>
-  </div>
-);
-
-const PhishingGame = () => (
-  <div className="p-6 text-center">
-    <h2 className="text-2xl font-bold mb-4">Phishing Mastermind</h2>
-    <p className="mb-6">Identify fake vs. real websites & emails.</p>
-    <p className="text-lg text-center text-muted-foreground">Game content coming soon!</p>
-  </div>
-);
-
+// Future game components placeholders
 const PasswordLabyrinthGame = () => (
   <div className="p-6 text-center">
     <h2 className="text-2xl font-bold mb-4">Password Labyrinth</h2>
@@ -71,6 +62,9 @@ const PasswordGames = () => {
   const [selectedGame, setSelectedGame] = useState<GameInfo | null>(null);
   const [activeGameComponent, setActiveGameComponent] = useState<React.ReactNode | null>(null);
   const [showGameDialog, setShowGameDialog] = useState(false);
+  const [recentScores, setRecentScores] = useState<{[key: string]: number}>({});
+  const { toast } = useToast();
+  const { user } = useAuth();
 
   const games: GameInfo[] = [
     {
@@ -133,16 +127,28 @@ const PasswordGames = () => {
     }
   ];
 
+  // Load recent scores from localStorage
+  useEffect(() => {
+    const savedScores = localStorage.getItem('gameScores');
+    if (savedScores) {
+      try {
+        setRecentScores(JSON.parse(savedScores));
+      } catch (e) {
+        console.error("Failed to parse saved game scores", e);
+      }
+    }
+  }, []);
+
   const startGame = (game: GameInfo) => {
     setSelectedGame(game);
     
     // Determine which game component to show based on selected game
     switch (game.id) {
       case "brute-force":
-        setActiveGameComponent(<BruteForceGame />);
+        setActiveGameComponent(<BruteForceGame onComplete={(score) => handleGameComplete(game.id, score)} />);
         break;
       case "phishing":
-        setActiveGameComponent(<PhishingGame />);
+        setActiveGameComponent(<PhishingGame onComplete={(score) => handleGameComplete(game.id, score)} />);
         break;
       case "labyrinth":
         setActiveGameComponent(<PasswordLabyrinthGame />);
@@ -163,6 +169,90 @@ const PasswordGames = () => {
     setShowGameDialog(true);
   };
 
+  // Handle game completion
+  const handleGameComplete = async (gameId: string, score: number) => {
+    // Update local scores
+    const updatedScores = { ...recentScores, [gameId]: score };
+    setRecentScores(updatedScores);
+    localStorage.setItem('gameScores', JSON.stringify(updatedScores));
+    
+    // Award XP based on game and score
+    const game = games.find(g => g.id === gameId);
+    const baseXp = game?.points || 50;
+    const earnedXp = Math.ceil(baseXp * (score / 100));
+    
+    // Save to database if user is logged in
+    if (user) {
+      try {
+        const gameMetadata = {
+          game_id: gameId,
+          score: score,
+          completed_at: new Date().toISOString()
+        };
+        
+        // Get user's current data
+        const { data: userData, error: userError } = await supabase
+          .from("password_history")
+          .select("score, metadata")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        
+        if (userError) throw userError;
+        
+        let currentScore = 0;
+        let metadata: any = { username: 'Player', games: [] };
+        
+        if (userData && userData.length > 0) {
+          currentScore = userData[0].score || 0;
+          metadata = userData[0].metadata || { username: 'Player', games: [] };
+        }
+        
+        // Update metadata with game result
+        if (!metadata.games) metadata.games = [];
+        metadata.games = [...metadata.games.filter((g: any) => g.game_id !== gameId), gameMetadata];
+        
+        // Save updated data
+        const { error } = await supabase
+          .from("password_history")
+          .upsert({
+            user_id: user.id,
+            score: currentScore + earnedXp,
+            metadata,
+            // Include other required fields
+            password_hash: `game_${gameId}_${Date.now()}`, // This is just a placeholder
+            length: 12, // Default values for required fields
+            has_upper: true,
+            has_lower: true,
+            has_digit: true,
+            has_special: true,
+            is_common: false,
+            has_common_pattern: false,
+            entropy: 80
+          });
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Progress Saved!",
+          description: `You've earned ${earnedXp} XP for completing ${game?.title}!`,
+        });
+      } catch (error) {
+        console.error("Error saving game progress:", error);
+        toast({
+          title: "Error saving progress",
+          description: "Your game score couldn't be saved to the leaderboard.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      toast({
+        title: `Game Completed!`,
+        description: `You scored ${score} points. Sign in to save your progress.`,
+      });
+    }
+  };
+
   const getLevelColor = (level: string) => {
     switch (level) {
       case "beginner":
@@ -174,6 +264,10 @@ const PasswordGames = () => {
       default:
         return "bg-slate-500 hover:bg-slate-600";
     }
+  };
+
+  const getBestScore = (gameId: string) => {
+    return recentScores[gameId] || 0;
   };
 
   return (
@@ -198,9 +292,11 @@ const PasswordGames = () => {
           <TabsContent value="all" className="mt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {games.map((game) => (
-                <div 
+                <motion.div 
                   key={game.id}
                   className={`p-4 rounded-lg border ${game.available ? 'border-slate-200 dark:border-slate-700' : 'border-dashed border-slate-300 dark:border-slate-600'} hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors`}
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
                 >
                   <div className="flex items-start space-x-4">
                     <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
@@ -219,9 +315,16 @@ const PasswordGames = () => {
                         {game.description}
                       </p>
                       <div className="mt-3 flex items-center justify-between">
-                        <div className="flex items-center text-sm text-slate-500 dark:text-slate-400">
-                          <TimerIcon className="h-4 w-4 mr-1" />
-                          <span>{game.points} XP</span>
+                        <div className="flex items-center space-x-3">
+                          <div className="flex items-center text-sm text-slate-500 dark:text-slate-400">
+                            <TimerIcon className="h-4 w-4 mr-1" />
+                            <span>{game.points} XP</span>
+                          </div>
+                          {getBestScore(game.id) > 0 && (
+                            <Badge variant="outline" className="text-xs">
+                              Best: {getBestScore(game.id)}
+                            </Badge>
+                          )}
                         </div>
                         <Button 
                           onClick={() => startGame(game)} 
@@ -233,7 +336,7 @@ const PasswordGames = () => {
                       </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           </TabsContent>
@@ -241,9 +344,11 @@ const PasswordGames = () => {
           <TabsContent value="available" className="mt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {games.filter(game => game.available).map((game) => (
-                <div 
+                <motion.div 
                   key={game.id}
                   className="p-4 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
                 >
                   <div className="flex items-start space-x-4">
                     <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
@@ -262,9 +367,16 @@ const PasswordGames = () => {
                         {game.description}
                       </p>
                       <div className="mt-3 flex items-center justify-between">
-                        <div className="flex items-center text-sm text-slate-500 dark:text-slate-400">
-                          <TimerIcon className="h-4 w-4 mr-1" />
-                          <span>{game.points} XP</span>
+                        <div className="flex items-center space-x-3">
+                          <div className="flex items-center text-sm text-slate-500 dark:text-slate-400">
+                            <TimerIcon className="h-4 w-4 mr-1" />
+                            <span>{game.points} XP</span>
+                          </div>
+                          {getBestScore(game.id) > 0 && (
+                            <Badge variant="outline" className="text-xs">
+                              Best: {getBestScore(game.id)}
+                            </Badge>
+                          )}
                         </div>
                         <Button onClick={() => startGame(game)}>
                           Play
@@ -272,7 +384,7 @@ const PasswordGames = () => {
                       </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           </TabsContent>
@@ -280,9 +392,11 @@ const PasswordGames = () => {
           <TabsContent value="coming-soon" className="mt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {games.filter(game => game.comingSoon).map((game) => (
-                <div 
+                <motion.div 
                   key={game.id}
                   className="p-4 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                  whileHover={{ y: -3 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
                 >
                   <div className="flex items-start space-x-4">
                     <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
@@ -311,7 +425,7 @@ const PasswordGames = () => {
                       </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           </TabsContent>

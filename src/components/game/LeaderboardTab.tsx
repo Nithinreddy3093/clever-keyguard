@@ -9,11 +9,12 @@ import { useLeaderboardData } from "./leaderboard/useLeaderboardData";
 import { getTierColor, getTierName, getGlowColor } from "./leaderboard/utils";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import { AlertCircle } from "lucide-react";
 
 const LeaderboardTab = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredRankings, setFilteredRankings] = useState<any[]>([]);
-  const { rankings, loading, fetchLeaderboardData } = useLeaderboardData();
+  const { rankings, loading, error, fetchLeaderboardData } = useLeaderboardData();
   const { user } = useAuth();
   const { toast } = useToast();
   const isInitialLoad = useRef(true);
@@ -100,7 +101,12 @@ const LeaderboardTab = () => {
       <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent pointer-events-none" />
       
       {userRanking && (
-        <div className="absolute top-0 right-0 m-4 z-10">
+        <motion.div 
+          className="absolute top-0 right-0 m-4 z-10"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
           <div className={`
             px-3 py-1.5 rounded-full text-sm font-medium
             bg-gradient-to-r from-slate-100 to-slate-200
@@ -110,7 +116,7 @@ const LeaderboardTab = () => {
           `}>
             Your Rank: <span className="font-bold text-primary">{userRanking.rank}</span>
           </div>
-        </div>
+        </motion.div>
       )}
       
       <LeaderboardHeader 
@@ -130,6 +136,29 @@ const LeaderboardTab = () => {
               transition={{ duration: 0.2 }}
             >
               <LeaderboardLoading />
+            </motion.div>
+          ) : error ? (
+            <motion.div
+              key="error"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="p-6 text-center"
+            >
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 mb-4">
+                <AlertCircle className="h-6 w-6" />
+              </div>
+              <h3 className="text-lg font-medium mb-2 text-red-600 dark:text-red-400">Failed to load rankings</h3>
+              <p className="text-slate-600 dark:text-slate-400 mb-4">
+                {error.message || "An error occurred while loading the leaderboard."}
+              </p>
+              <button
+                onClick={() => fetchLeaderboardData()}
+                className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+              >
+                Try Again
+              </button>
             </motion.div>
           ) : (
             <motion.div
