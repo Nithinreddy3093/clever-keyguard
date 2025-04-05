@@ -95,7 +95,7 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
       toast({
         title: "Password Cracked!",
         description: `Password "${targetPassword}" successfully hacked! +${roundScore} points`,
-        variant: "success",
+        variant: "default", // Changed from "success" to "default"
       });
       
       setFeedbackMessage("Password cracked successfully! Moving to next target...");
