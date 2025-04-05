@@ -1,124 +1,97 @@
 
 import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-
-export interface PasswordQuestData {
-  id: string;
-  title: string;
-  description: string;
-  completed: boolean;
-  completedAt?: string;
-  xp?: number;
-}
 
 export interface AchievementData {
   id: string;
   title: string;
   description: string;
+  icon: string;
   unlocked: boolean;
   unlockedAt?: string;
-  rarity: "common" | "uncommon" | "rare" | "legendary";
-  secret: boolean;
-  icon: string;
+  secret?: boolean;
 }
 
 export interface DailyChallenge {
   id: string;
   title: string;
   description: string;
-  completed: boolean;
   xp: number;
-  expiresAt: string;
+  completed: boolean;
 }
+
+interface Quest {
+  id: string;
+  title: string;
+  description: string;
+  completed: boolean;
+  completedAt?: string;
+  xp: number;
+}
+
+const DEFAULT_ACHIEVEMENTS: AchievementData[] = [
+  {
+    id: "masterHacker",
+    title: "Master Hacker",
+    description: "Achieve a perfect score of 100 on password strength",
+    icon: "🔐",
+    unlocked: false,
+    secret: false
+  },
+  {
+    id: "complexity",
+    title: "Complexity King",
+    description: "Create a password with uppercase, lowercase, numbers, and special characters",
+    icon: "🛡️",
+    unlocked: false,
+    secret: false
+  },
+  {
+    id: "entropy",
+    title: "Entropy Master",
+    description: "Create a password with entropy over 100 bits",
+    icon: "🔒",
+    unlocked: false,
+    secret: false
+  },
+  {
+    id: "streakMaster",
+    title: "Streak Master",
+    description: "Maintain a 7-day streak of password checking",
+    icon: "🔥",
+    unlocked: false,
+    secret: false
+  },
+  {
+    id: "persistence",
+    title: "Persistence Pays Off",
+    description: "Test 10 different passwords",
+    icon: "🧪",
+    unlocked: false,
+    secret: false
+  },
+  {
+    id: "noCommon",
+    title: "Pattern Breaker",
+    description: "Create a secure password with no common patterns",
+    icon: "🧩",
+    unlocked: false,
+    secret: true
+  },
+  {
+    id: "diamond",
+    title: "Diamond Standard",
+    description: "Create a password that would take over 1000 years to crack",
+    icon: "💎",
+    unlocked: false,
+    secret: true
+  }
+];
 
 const useGameProgress = () => {
   const [streak, setStreak] = useState(0);
-  const [achievements, setAchievements] = useState<AchievementData[]>([
-    {
-      id: "cryptographer",
-      title: "The Cryptographer",
-      description: "Created a password with 100+ bits of entropy",
-      unlocked: false,
-      rarity: "rare",
-      secret: false,
-      icon: "🔐"
-    },
-    {
-      id: "hackersNightmare",
-      title: "Hacker's Nightmare",
-      description: "Generated a password unbreakable for 1,000+ years",
-      unlocked: false,
-      rarity: "legendary",
-      secret: false,
-      icon: "🛡️"
-    },
-    {
-      id: "diversityChamp",
-      title: "Diversity Champion",
-      description: "Used all four character types in one password",
-      unlocked: false,
-      rarity: "uncommon",
-      secret: false,
-      icon: "🔡"
-    },
-    {
-      id: "marathonRunner",
-      title: "Marathon Runner",
-      description: "Created a password with 20+ characters",
-      unlocked: false,
-      rarity: "uncommon",
-      secret: false,
-      icon: "📏"
-    },
-    {
-      id: "perfectScore",
-      title: "Perfect Score",
-      description: "Achieved the maximum password security score",
-      unlocked: false,
-      rarity: "rare",
-      secret: false,
-      icon: "⭐"
-    },
-    {
-      id: "thinkOutside",
-      title: "Think Outside The Box",
-      description: "Created a password with unexpected patterns",
-      unlocked: false,
-      rarity: "rare",
-      secret: true,
-      icon: "🎭"
-    },
-    {
-      id: "persistence",
-      title: "Persistence Pays Off",
-      description: "Tested 10 different passwords in one session",
-      unlocked: false,
-      rarity: "common",
-      secret: true,
-      icon: "🔄"
-    },
-    {
-      id: "streakMaster",
-      title: "Streak Master",
-      description: "Maintained a 7-day password testing streak",
-      unlocked: false,
-      rarity: "rare",
-      secret: false,
-      icon: "🔥"
-    },
-    {
-      id: "globalElite",
-      title: "Global Elite",
-      description: "Ranked in the top 10 on the global leaderboard",
-      unlocked: false,
-      rarity: "legendary",
-      secret: true,
-      icon: "🌎"
-    }
-  ]);
-  const [questsCompleted, setQuestsCompleted] = useState<PasswordQuestData[]>([]);
+  const [achievements, setAchievements] = useState<AchievementData[]>(DEFAULT_ACHIEVEMENTS);
+  const [questsCompleted, setQuestsCompleted] = useState<Quest[]>([]);
   const [passwordsTestedCount, setPasswordsTestedCount] = useState(0);
   const [dailyChallenges, setDailyChallenges] = useState<DailyChallenge[]>([]);
   const [playerLevel, setPlayerLevel] = useState(1);
@@ -126,237 +99,109 @@ const useGameProgress = () => {
   const [xpToNextLevel, setXpToNextLevel] = useState(100);
   const [todayCompleted, setTodayCompleted] = useState(false);
   const [globalRank, setGlobalRank] = useState<number | null>(null);
-  
-  const { toast } = useToast();
-  const { user } = useAuth();
 
-  useEffect(() => {
-    const storedStreak = localStorage.getItem("passwordStreak");
-    if (storedStreak) {
-      setStreak(parseInt(storedStreak, 10) || 0);
-    }
-    
-    const lastStreakUpdate = localStorage.getItem("lastStreakUpdate");
-    if (lastStreakUpdate) {
-      const lastUpdate = new Date(lastStreakUpdate);
-      const now = new Date();
-      const daysDiff = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
-      
-      if (daysDiff > 1) {
-        setStreak(0);
-        localStorage.setItem("passwordStreak", "0");
-      }
-    }
-    
-    const storedAchievements = localStorage.getItem("passwordAchievements");
-    if (storedAchievements) {
-      try {
-        const parsedAchievements = JSON.parse(storedAchievements);
-        setAchievements(state => {
-          return state.map(achievement => {
-            const storedAchievement = parsedAchievements.find((a: any) => a.id === achievement.id);
-            if (storedAchievement) {
-              return { ...achievement, ...storedAchievement };
-            }
-            return achievement;
-          });
-        });
-      } catch (e) {
-        console.error("Failed to parse stored achievements", e);
-      }
-    }
-    
-    const storedQuests = localStorage.getItem("passwordQuests");
-    if (storedQuests) {
-      try {
-        const parsedQuests = JSON.parse(storedQuests);
-        setQuestsCompleted(parsedQuests);
-      } catch (e) {
-        console.error("Failed to parse stored quests", e);
-      }
-    }
-    
-    const storedCount = localStorage.getItem("passwordsTestedCount");
-    if (storedCount) {
-      setPasswordsTestedCount(parseInt(storedCount, 10) || 0);
-    }
-    
-    const storedLevel = localStorage.getItem("playerLevel");
-    if (storedLevel) {
-      setPlayerLevel(parseInt(storedLevel, 10) || 1);
-    }
-    
-    const storedXp = localStorage.getItem("playerXp");
-    if (storedXp) {
-      setPlayerXp(parseInt(storedXp, 10) || 0);
-    }
-    
-    const lastCompletionDate = localStorage.getItem("lastDailyChallengeCompletion");
-    if (lastCompletionDate) {
-      const today = new Date().toDateString();
-      if (lastCompletionDate === today) {
-        setTodayCompleted(true);
-      }
-    }
-    
-    if (user) {
-      checkGlobalRank();
-    }
-  }, [user]);
-
+  // Calculate XP to next level based on current level
   const calculateXpToNextLevel = (level: number) => {
-    return Math.round(100 * Math.pow(1.5, level - 1));
+    return Math.floor(100 * Math.pow(1.2, level - 1));
   };
 
+  useEffect(() => {
+    // Load saved progress from localStorage
+    const storedStreak = localStorage.getItem("passwordStreak");
+    if (storedStreak) {
+      setStreak(parseInt(storedStreak));
+    }
+
+    const storedAchievements = localStorage.getItem("passwordAchievements");
+    if (storedAchievements) {
+      setAchievements(JSON.parse(storedAchievements));
+    }
+
+    const storedQuests = localStorage.getItem("passwordQuests");
+    if (storedQuests) {
+      setQuestsCompleted(JSON.parse(storedQuests));
+    }
+
+    const storedPasswordsCount = localStorage.getItem("passwordsTestedCount");
+    if (storedPasswordsCount) {
+      setPasswordsTestedCount(parseInt(storedPasswordsCount));
+    }
+
+    const storedPlayerLevel = localStorage.getItem("passwordPlayerLevel");
+    if (storedPlayerLevel) {
+      const level = parseInt(storedPlayerLevel);
+      setPlayerLevel(level);
+      setXpToNextLevel(calculateXpToNextLevel(level));
+    }
+
+    const storedPlayerXp = localStorage.getItem("passwordPlayerXp");
+    if (storedPlayerXp) {
+      setPlayerXp(parseInt(storedPlayerXp));
+    }
+
+    // Check for last daily challenge completion
+    const lastCompletion = localStorage.getItem("lastDailyChallengeCompletion");
+    const isToday = lastCompletion === new Date().toDateString();
+    setTodayCompleted(isToday);
+    
+    // Either load saved daily challenges or generate new ones
+    const storedDailyChallenges = localStorage.getItem("dailyChallenges");
+    if (storedDailyChallenges) {
+      const parsedChallenges = JSON.parse(storedDailyChallenges);
+      const lastUpdate = localStorage.getItem("dailyChallengesDate");
+      
+      if (lastUpdate === new Date().toDateString()) {
+        setDailyChallenges(parsedChallenges);
+      } else {
+        generateDailyChallenges();
+      }
+    } else {
+      generateDailyChallenges();
+    }
+    
+    // Check global rank
+    checkGlobalRank();
+  }, []);
+
+  // Add XP and level up if needed
   const addXp = (amount: number) => {
     const newXp = playerXp + amount;
     let newLevel = playerLevel;
     let newXpToNextLevel = xpToNextLevel;
     
+    // Check for level up
     if (newXp >= xpToNextLevel) {
-      newLevel++;
+      newLevel = playerLevel + 1;
       newXpToNextLevel = calculateXpToNextLevel(newLevel);
       
-      toast({
-        title: "Level Up!",
-        description: `You've reached level ${newLevel}!`,
-      });
+      // Save new level
+      localStorage.setItem("passwordPlayerLevel", newLevel.toString());
       
-      if (newLevel >= 10 && !achievements.find(a => a.id === "streakMaster")?.unlocked) {
-        const updatedAchievements = achievements.map(a => {
-          if (a.id === "streakMaster") {
-            return { ...a, unlocked: true, unlockedAt: new Date().toISOString() };
-          }
-          return a;
+      // Notification of level up
+      if (typeof window !== 'undefined') {
+        const event = new CustomEvent("passwordLevelUp", {
+          detail: { level: newLevel, xp: newXp }
         });
-        setAchievements(updatedAchievements);
-        localStorage.setItem("passwordAchievements", JSON.stringify(updatedAchievements));
-        
-        toast({
-          title: "Achievement Unlocked!",
-          description: "Streak Master - Reached level 10",
-        });
+        window.dispatchEvent(event);
       }
     }
     
+    // Update state and localStorage
     setPlayerXp(newXp);
     setPlayerLevel(newLevel);
     setXpToNextLevel(newXpToNextLevel);
     
-    localStorage.setItem("playerXp", newXp.toString());
-    localStorage.setItem("playerLevel", newLevel.toString());
+    localStorage.setItem("passwordPlayerXp", newXp.toString());
   };
 
-  const generateDailyChallenges = () => {
-    const lastGeneration = localStorage.getItem("dailyChallengesGenerated");
-    const today = new Date().toDateString();
-    
-    if (lastGeneration === today) {
-      const storedChallenges = localStorage.getItem("dailyChallenges");
-      if (storedChallenges) {
-        try {
-          const parsedChallenges = JSON.parse(storedChallenges);
-          setDailyChallenges(parsedChallenges);
-          return;
-        } catch (e) {
-          console.error("Failed to parse stored daily challenges", e);
-        }
-      }
-    }
-    
-    const challenges: DailyChallenge[] = [
-      {
-        id: "daily1",
-        title: "Character Diversity",
-        description: "Create a password with uppercase, lowercase, numbers and special characters",
-        completed: false,
-        xp: 50,
-        expiresAt: new Date(new Date().setHours(23, 59, 59, 999)).toISOString()
-      },
-      {
-        id: "daily2",
-        title: "Entropy Master",
-        description: "Create a password with at least 80 bits of entropy",
-        completed: false,
-        xp: 75,
-        expiresAt: new Date(new Date().setHours(23, 59, 59, 999)).toISOString()
-      },
-      {
-        id: "daily3",
-        title: "Crack Resistant",
-        description: "Create a password that would take at least 100 years to crack",
-        completed: false,
-        xp: 100,
-        expiresAt: new Date(new Date().setHours(23, 59, 59, 999)).toISOString()
-      }
-    ];
-    
-    setDailyChallenges(challenges);
-    localStorage.setItem("dailyChallenges", JSON.stringify(challenges));
-    localStorage.setItem("dailyChallengesGenerated", today);
-  };
-
-  const checkGlobalRank = async () => {
-    if (!user) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from("password_history")
-        .select("user_id, score")
-        .order("score", { ascending: false });
-        
-      if (error) throw error;
-      
-      if (data && data.length > 0) {
-        const userMap = new Map<string, number>();
-        
-        data.forEach((entry) => {
-          if (!entry.user_id) return;
-          
-          if (!userMap.has(entry.user_id)) {
-            userMap.set(entry.user_id, entry.score);
-          } else {
-            const currentScore = userMap.get(entry.user_id) || 0;
-            if (entry.score > currentScore) {
-              userMap.set(entry.user_id, entry.score);
-            }
-          }
-        });
-        
-        const rankings = Array.from(userMap.entries())
-          .sort((a, b) => b[1] - a[1])
-          .map(([userId], index) => ({ userId, rank: index + 1 }));
-        
-        const userRanking = rankings.find(r => r.userId === user.id);
-        if (userRanking) {
-          setGlobalRank(userRanking.rank);
-          
-          if (userRanking.rank <= 10 && !achievements.find(a => a.id === "globalElite")?.unlocked) {
-            const updatedAchievements = achievements.map(a => {
-              if (a.id === "globalElite") {
-                return { ...a, unlocked: true, unlockedAt: new Date().toISOString() };
-              }
-              return a;
-            });
-            setAchievements(updatedAchievements);
-            localStorage.setItem("passwordAchievements", JSON.stringify(updatedAchievements));
-            
-            toast({
-              title: "Achievement Unlocked!",
-              description: "Global Elite - Ranked in the top 10",
-            });
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Error checking global rank:", error);
-    }
-  };
-
+  // Update user streak
   const updateUserStreak = async () => {
-    if (!user) return;
-    
     try {
+      // Get the authenticated user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return streak;
+      
+      // Get the user's current streak from Supabase
       const { data: streakData, error: streakError } = await supabase
         .from("password_history")
         .select("daily_streak, last_interaction_date")
@@ -365,18 +210,19 @@ const useGameProgress = () => {
         .limit(1);
       
       if (streakError) {
-        console.error("Error updating streak:", streakError);
+        console.error("Error fetching streak data:", streakError);
         return streak;
       }
       
-      let currentStreak = 0;
+      let userStreak = streak;
       let lastDate = null;
       
       if (streakData && Array.isArray(streakData) && streakData.length > 0) {
-        currentStreak = streakData[0].daily_streak || 0;
+        userStreak = streakData[0].daily_streak || 0;
         lastDate = streakData[0].last_interaction_date;
       }
       
+      // Check if last interaction was yesterday or earlier
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
@@ -385,31 +231,148 @@ const useGameProgress = () => {
         lastInteraction.setHours(0, 0, 0, 0);
       }
       
+      // Calculate days difference
       const daysDiff = lastInteraction 
         ? Math.floor((today.getTime() - lastInteraction.getTime()) / (1000 * 60 * 60 * 24))
         : 1;
       
-      let newStreak = currentStreak;
+      // Update streak based on days difference
+      let newStreak = userStreak;
       if (daysDiff === 1) {
-        newStreak = currentStreak + 1;
+        // Yesterday - increment streak
+        newStreak = userStreak + 1;
+        // Add XP for continuing streak
+        addXp(10 * Math.min(newStreak, 10)); // Cap at 100 XP for 10+ days
       } else if (daysDiff > 1) {
+        // More than a day - reset streak
         newStreak = 1;
       } else if (daysDiff === 0) {
-        newStreak = Math.max(currentStreak, 1);
+        // Same day - no change to streak
+        newStreak = Math.max(userStreak, 1);
       }
       
-      return newStreak;
+      // Update local storage
+      localStorage.setItem("passwordStreak", newStreak.toString());
+      setStreak(newStreak);
       
+      return newStreak;
     } catch (error) {
       console.error("Error updating streak:", error);
       return streak;
     }
   };
 
+  // Generate daily challenges
+  const generateDailyChallenges = () => {
+    const challengePool = [
+      {
+        id: "allCharTypes",
+        title: "Character Diversity",
+        description: "Create a password with uppercase, lowercase, numbers and special characters",
+        xp: 50
+      },
+      {
+        id: "highEntropy",
+        title: "Entropy Expert",
+        description: "Create a password with at least 80 bits of entropy",
+        xp: 75
+      },
+      {
+        id: "unhackable",
+        title: "Virtually Unhackable",
+        description: "Create a password that would take at least 100 years to crack",
+        xp: 100
+      },
+      {
+        id: "lengthMaster",
+        title: "Length Master",
+        description: "Create a password with at least 16 characters",
+        xp: 50
+      },
+      {
+        id: "uniquePattern",
+        title: "Pattern Breaker",
+        description: "Create a strong password with no common patterns detected",
+        xp: 75
+      },
+      {
+        id: "perfectScore",
+        title: "Perfect Score",
+        description: "Achieve a perfect 1.0 password strength score",
+        xp: 100
+      },
+      {
+        id: "cryptoStrong",
+        title: "Cryptographically Strong",
+        description: "Create a password with over 90 bits of entropy",
+        xp: 80
+      }
+    ];
+    
+    // Randomly select 3 challenges
+    const shuffled = [...challengePool].sort(() => 0.5 - Math.random());
+    const selectedChallenges = shuffled.slice(0, 3).map(challenge => ({
+      ...challenge,
+      completed: false
+    }));
+    
+    setDailyChallenges(selectedChallenges);
+    localStorage.setItem("dailyChallenges", JSON.stringify(selectedChallenges));
+    localStorage.setItem("dailyChallengesDate", new Date().toDateString());
+  };
+
+  // Check global rank in Supabase
+  const checkGlobalRank = async () => {
+    try {
+      // Get the authenticated user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      
+      // Get all scores sorted by score (descending)
+      const { data: allScores, error } = await supabase
+        .from("password_history")
+        .select("user_id, score")
+        .order("score", { ascending: false });
+      
+      if (error) {
+        console.error("Error fetching global ranks:", error);
+        return null;
+      }
+      
+      if (!allScores || !Array.isArray(allScores)) {
+        return null;
+      }
+      
+      // Map of users to their highest score
+      const userScores = new Map<string, number>();
+      allScores.forEach(entry => {
+        if (!entry.user_id) return;
+        
+        if (!userScores.has(entry.user_id) || entry.score > userScores.get(entry.user_id)!) {
+          userScores.set(entry.user_id, entry.score);
+        }
+      });
+      
+      // Convert to array of [userId, score] and sort by score
+      const sortedUsers = Array.from(userScores.entries())
+        .sort((a, b) => b[1] - a[1]);
+      
+      // Find the current user's rank (1-based index)
+      const userIndex = sortedUsers.findIndex(entry => entry[0] === user.id);
+      const rank = userIndex !== -1 ? userIndex + 1 : null;
+      
+      setGlobalRank(rank);
+      return rank;
+    } catch (error) {
+      console.error("Error checking global rank:", error);
+      return null;
+    }
+  };
+
   return {
     streak,
     setStreak,
-    achievements,
+    achievements, 
     setAchievements,
     questsCompleted,
     setQuestsCompleted,
@@ -418,20 +381,15 @@ const useGameProgress = () => {
     dailyChallenges,
     setDailyChallenges,
     playerLevel,
-    setPlayerLevel,
     playerXp,
-    setPlayerXp,
     xpToNextLevel,
-    setXpToNextLevel,
     todayCompleted,
     setTodayCompleted,
     globalRank,
-    setGlobalRank,
     addXp,
     checkGlobalRank,
     generateDailyChallenges,
-    updateUserStreak,
-    calculateXpToNextLevel,
+    updateUserStreak
   };
 };
 
