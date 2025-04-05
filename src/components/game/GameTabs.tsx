@@ -144,6 +144,7 @@ const GameTabs = ({
             <SecretAchievements
               achievements={achievements.map(achievement => ({
                 ...achievement,
+                rarity: achievement.rarity || "common", // Add default rarity if missing
                 icon: (() => {
                   switch (achievement.icon) {
                     case "🔐": return <Award className="h-5 w-5 text-indigo-500" />;

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -10,6 +9,7 @@ export interface AchievementData {
   unlocked: boolean;
   unlockedAt?: string;
   secret?: boolean;
+  rarity: "common" | "uncommon" | "rare" | "legendary";
 }
 
 export interface DailyChallenge {
@@ -18,6 +18,7 @@ export interface DailyChallenge {
   description: string;
   xp: number;
   completed: boolean;
+  expiresAt: string;
 }
 
 interface Quest {
@@ -36,7 +37,8 @@ const DEFAULT_ACHIEVEMENTS: AchievementData[] = [
     description: "Achieve a perfect score of 100 on password strength",
     icon: "🔐",
     unlocked: false,
-    secret: false
+    secret: false,
+    rarity: "legendary"
   },
   {
     id: "complexity",
@@ -44,7 +46,8 @@ const DEFAULT_ACHIEVEMENTS: AchievementData[] = [
     description: "Create a password with uppercase, lowercase, numbers, and special characters",
     icon: "🛡️",
     unlocked: false,
-    secret: false
+    secret: false,
+    rarity: "common"
   },
   {
     id: "entropy",
@@ -52,7 +55,8 @@ const DEFAULT_ACHIEVEMENTS: AchievementData[] = [
     description: "Create a password with entropy over 100 bits",
     icon: "🔒",
     unlocked: false,
-    secret: false
+    secret: false,
+    rarity: "rare"
   },
   {
     id: "streakMaster",
@@ -60,7 +64,8 @@ const DEFAULT_ACHIEVEMENTS: AchievementData[] = [
     description: "Maintain a 7-day streak of password checking",
     icon: "🔥",
     unlocked: false,
-    secret: false
+    secret: false,
+    rarity: "uncommon"
   },
   {
     id: "persistence",
@@ -68,7 +73,8 @@ const DEFAULT_ACHIEVEMENTS: AchievementData[] = [
     description: "Test 10 different passwords",
     icon: "🧪",
     unlocked: false,
-    secret: false
+    secret: false,
+    rarity: "common"
   },
   {
     id: "noCommon",
@@ -76,7 +82,8 @@ const DEFAULT_ACHIEVEMENTS: AchievementData[] = [
     description: "Create a secure password with no common patterns",
     icon: "🧩",
     unlocked: false,
-    secret: true
+    secret: true,
+    rarity: "uncommon"
   },
   {
     id: "diamond",
@@ -84,7 +91,8 @@ const DEFAULT_ACHIEVEMENTS: AchievementData[] = [
     description: "Create a password that would take over 1000 years to crack",
     icon: "💎",
     unlocked: false,
-    secret: true
+    secret: true,
+    rarity: "legendary"
   }
 ];
 
@@ -100,13 +108,11 @@ const useGameProgress = () => {
   const [todayCompleted, setTodayCompleted] = useState(false);
   const [globalRank, setGlobalRank] = useState<number | null>(null);
 
-  // Calculate XP to next level based on current level
   const calculateXpToNextLevel = (level: number) => {
     return Math.floor(100 * Math.pow(1.2, level - 1));
   };
 
   useEffect(() => {
-    // Load saved progress from localStorage
     const storedStreak = localStorage.getItem("passwordStreak");
     if (storedStreak) {
       setStreak(parseInt(storedStreak));
@@ -139,12 +145,10 @@ const useGameProgress = () => {
       setPlayerXp(parseInt(storedPlayerXp));
     }
 
-    // Check for last daily challenge completion
     const lastCompletion = localStorage.getItem("lastDailyChallengeCompletion");
     const isToday = lastCompletion === new Date().toDateString();
     setTodayCompleted(isToday);
     
-    // Either load saved daily challenges or generate new ones
     const storedDailyChallenges = localStorage.getItem("dailyChallenges");
     if (storedDailyChallenges) {
       const parsedChallenges = JSON.parse(storedDailyChallenges);
@@ -159,25 +163,20 @@ const useGameProgress = () => {
       generateDailyChallenges();
     }
     
-    // Check global rank
     checkGlobalRank();
   }, []);
 
-  // Add XP and level up if needed
   const addXp = (amount: number) => {
     const newXp = playerXp + amount;
     let newLevel = playerLevel;
     let newXpToNextLevel = xpToNextLevel;
     
-    // Check for level up
     if (newXp >= xpToNextLevel) {
       newLevel = playerLevel + 1;
       newXpToNextLevel = calculateXpToNextLevel(newLevel);
       
-      // Save new level
       localStorage.setItem("passwordPlayerLevel", newLevel.toString());
       
-      // Notification of level up
       if (typeof window !== 'undefined') {
         const event = new CustomEvent("passwordLevelUp", {
           detail: { level: newLevel, xp: newXp }
@@ -186,7 +185,6 @@ const useGameProgress = () => {
       }
     }
     
-    // Update state and localStorage
     setPlayerXp(newXp);
     setPlayerLevel(newLevel);
     setXpToNextLevel(newXpToNextLevel);
@@ -194,14 +192,11 @@ const useGameProgress = () => {
     localStorage.setItem("passwordPlayerXp", newXp.toString());
   };
 
-  // Update user streak
   const updateUserStreak = async () => {
     try {
-      // Get the authenticated user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return streak;
       
-      // Get the user's current streak from Supabase
       const { data: streakData, error: streakError } = await supabase
         .from("password_history")
         .select("daily_streak, last_interaction_date")
@@ -222,7 +217,6 @@ const useGameProgress = () => {
         lastDate = streakData[0].last_interaction_date;
       }
       
-      // Check if last interaction was yesterday or earlier
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
@@ -231,27 +225,20 @@ const useGameProgress = () => {
         lastInteraction.setHours(0, 0, 0, 0);
       }
       
-      // Calculate days difference
       const daysDiff = lastInteraction 
         ? Math.floor((today.getTime() - lastInteraction.getTime()) / (1000 * 60 * 60 * 24))
         : 1;
       
-      // Update streak based on days difference
       let newStreak = userStreak;
       if (daysDiff === 1) {
-        // Yesterday - increment streak
         newStreak = userStreak + 1;
-        // Add XP for continuing streak
-        addXp(10 * Math.min(newStreak, 10)); // Cap at 100 XP for 10+ days
+        addXp(10 * Math.min(newStreak, 10));
       } else if (daysDiff > 1) {
-        // More than a day - reset streak
         newStreak = 1;
       } else if (daysDiff === 0) {
-        // Same day - no change to streak
         newStreak = Math.max(userStreak, 1);
       }
       
-      // Update local storage
       localStorage.setItem("passwordStreak", newStreak.toString());
       setStreak(newStreak);
       
@@ -262,7 +249,6 @@ const useGameProgress = () => {
     }
   };
 
-  // Generate daily challenges
   const generateDailyChallenges = () => {
     const challengePool = [
       {
@@ -309,11 +295,17 @@ const useGameProgress = () => {
       }
     ];
     
-    // Randomly select 3 challenges
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    const expiresAt = tomorrow.toISOString();
+    
     const shuffled = [...challengePool].sort(() => 0.5 - Math.random());
     const selectedChallenges = shuffled.slice(0, 3).map(challenge => ({
       ...challenge,
-      completed: false
+      completed: false,
+      expiresAt: expiresAt
     }));
     
     setDailyChallenges(selectedChallenges);
@@ -321,14 +313,11 @@ const useGameProgress = () => {
     localStorage.setItem("dailyChallengesDate", new Date().toDateString());
   };
 
-  // Check global rank in Supabase
   const checkGlobalRank = async () => {
     try {
-      // Get the authenticated user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
       
-      // Get all scores sorted by score (descending)
       const { data: allScores, error } = await supabase
         .from("password_history")
         .select("user_id, score")
@@ -343,7 +332,6 @@ const useGameProgress = () => {
         return null;
       }
       
-      // Map of users to their highest score
       const userScores = new Map<string, number>();
       allScores.forEach(entry => {
         if (!entry.user_id) return;
@@ -353,11 +341,9 @@ const useGameProgress = () => {
         }
       });
       
-      // Convert to array of [userId, score] and sort by score
       const sortedUsers = Array.from(userScores.entries())
         .sort((a, b) => b[1] - a[1]);
       
-      // Find the current user's rank (1-based index)
       const userIndex = sortedUsers.findIndex(entry => entry[0] === user.id);
       const rank = userIndex !== -1 ? userIndex + 1 : null;
       
