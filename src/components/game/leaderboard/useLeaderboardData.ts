@@ -5,7 +5,8 @@ import { useLeaderboardSubscription } from "@/hooks/leaderboard/useLeaderboardSu
 import { useLeaderboardUpdates } from "@/hooks/leaderboard/useLeaderboardUpdates";
 import { LeaderboardEntry } from "@/types/leaderboard";
 
-export { LeaderboardEntry } from "@/types/leaderboard";
+// Use 'export type' to re-export types when isolatedModules is enabled
+export type { LeaderboardEntry } from "@/types/leaderboard";
 
 export const useLeaderboardData = () => {
   const [rankings, setRankings] = useState<LeaderboardEntry[]>([]);
