@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, Trophy, Target, Award, Gamepad2 } from "lucide-react";
@@ -144,7 +143,8 @@ const GameTabs = ({
             <SecretAchievements
               achievements={achievements.map(achievement => ({
                 ...achievement,
-                rarity: achievement.rarity || "common", // Add default rarity if missing
+                rarity: achievement.rarity || "common",
+                secret: achievement.secret || false,
                 icon: (() => {
                   switch (achievement.icon) {
                     case "🔐": return <Award className="h-5 w-5 text-indigo-500" />;
