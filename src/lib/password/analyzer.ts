@@ -43,14 +43,14 @@ export const analyzePassword = (password: string): PasswordAnalysis => {
   // Calculate attack resistance
   const attackResistance = calculateAttackResistance(password);
   
-  // Calculate hackability score
+  // Calculate hackability score using only the correct parameters
   const hackabilityScore = calculateHackabilityScore(password);
   
   // Generate improvement suggestions
   const suggestions = generateSuggestions(password, score);
   
-  // Check for unlocked achievements
-  const achievements = checkForAchievements(password, {
+  // Prepare analysis data for achievements check
+  const analysisData = {
     length,
     hasUpper,
     hasLower,
@@ -62,7 +62,10 @@ export const analyzePassword = (password: string): PasswordAnalysis => {
     hasCommonPattern,
     mlPatterns: detectedPatterns,
     crackTimeEstimates
-  });
+  };
+  
+  // Check for unlocked achievements
+  const achievements = checkForAchievements(password, analysisData);
   
   // Format crack time for display
   const timeToCrack = {
@@ -90,6 +93,10 @@ export const analyzePassword = (password: string): PasswordAnalysis => {
     attackResistance,
     hackabilityScore,
     suggestions,
-    achievements
+    achievements,
+    passphraseSuggestions: [],
+    breachData: {
+      found: false
+    }
   };
 };

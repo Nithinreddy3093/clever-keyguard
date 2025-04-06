@@ -245,12 +245,11 @@ export const detectPatterns = (password: string): DetectedPattern[] => {
   });
 };
 
-// Calculate attack resistance scores (new function)
-export const calculateAttackResistance = (
-  password: string, 
-  patterns: DetectedPattern[], 
-  entropy: number
-): AttackResistance => {
+// Calculate attack resistance scores
+export const calculateAttackResistance = (password: string): AttackResistance => {
+  const patterns = detectPatterns(password);
+  const entropy = calculateCharsetFactor(password) * password.length * 4;
+  
   // Calculate resistance to brute force attacks (based on entropy)
   // Higher entropy = more resistant to brute force
   const bruteForceFactor = Math.min(100, entropy * 1.5);
@@ -316,21 +315,13 @@ export const calculateAttackResistance = (
 };
 
 // Calculate AI-driven hackability score
-export const calculateHackabilityScore = (
-  password: string,
-  patterns: DetectedPattern[],
-  entropy: number,
-  crackTimeInSeconds: number
-): HackabilityScore => {
+export const calculateHackabilityScore = (password: string): HackabilityScore => {
+  const patterns = detectPatterns(password);
+  const entropy = calculateCharsetFactor(password) * password.length * 4;
+  const crackTimeInSeconds = Math.pow(2, entropy) / 8_600_000_000; // SHA-256 GPU speed
+  
   let hackabilityScore = 0;
   const reasons: string[] = [];
-  
-  // Is it in the top 10000 RockYou passwords? (simulated check)
-  if (rockyouFrequencyTop[password.toLowerCase() as keyof typeof rockyouFrequencyTop]) {
-    hackabilityScore += 50;
-    const frequency = rockyouFrequencyTop[password.toLowerCase() as keyof typeof rockyouFrequencyTop];
-    reasons.push(`This exact password appeared ${frequency} times in the RockYou data breach`);
-  }
   
   // Analyze patterns with high confidence as significant contributors to hackability
   const highConfidencePatterns = patterns.filter(p => p.confidence > 0.8);

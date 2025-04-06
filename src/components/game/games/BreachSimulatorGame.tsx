@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,6 +23,9 @@ const BreachSimulatorGame = ({ onComplete }: BreachSimulatorGameProps) => {
   const [feedback, setFeedback] = useState("");
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [gameComplete, setGameComplete] = useState(false);
+  const [stage, setStage] = useState(0);
+  const [currentOptions, setCurrentOptions] = useState<string[]>([]);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
   
   // Scenarios for the breach simulation game
   const scenarios = [

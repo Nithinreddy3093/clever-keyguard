@@ -7,6 +7,7 @@ export interface PasswordAnalysis {
   hasLower: boolean;
   hasDigit: boolean;
   hasSpecial: boolean;
+  hasUnicode: boolean;
   isCommon: boolean;
   hasCommonPattern: boolean;
   commonPatterns: string[];
@@ -26,21 +27,8 @@ export interface PasswordAnalysis {
     timeInSeconds: number;
   }>;
   suggestions: string[];
-  aiEnhanced: {
-    originalPassword: string;
-    enhancedPassword: string;
-    improvements: string[];
-    strengthIncrease: number;
-  };
   attackResistance: AttackResistance;
   hackabilityScore: HackabilityScore;
-  passphraseSuggestions: string[];
-  breachData?: {
-    found: boolean;
-    breachCount?: number;
-    sources?: string[];
-    lastBreached?: string;
-  };
   achievements?: Array<{
     id: string;
     title: string;
@@ -48,6 +36,19 @@ export interface PasswordAnalysis {
     rarity: "common" | "uncommon" | "rare" | "legendary";
     icon: string;
   }>;
+  passphraseSuggestions: string[];
+  breachData?: {
+    found: boolean;
+    breachCount?: number;
+    sources?: string[];
+    lastBreached?: string;
+  };
+  aiEnhanced?: {
+    originalPassword: string;
+    enhancedPassword: string;
+    improvements: string[];
+    strengthIncrease: number;
+  };
 }
 
 export interface Achievement {
