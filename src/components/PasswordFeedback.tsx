@@ -1,3 +1,4 @@
+
 import { PasswordAnalysis } from "@/types/password";
 import { Check, X, Clock, AlertTriangle, Zap, Brain, Shield, Lock, Target, RefreshCcw } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -341,7 +342,7 @@ const PasswordFeedback = ({ analysis }: PasswordFeedbackProps) => {
           </div>
 
           {/* AI-Enhanced Password Suggestion */}
-          {analysis.score < 4 && analysis.aiEnhanced && analysis.aiEnhanced.originalPassword !== analysis.aiEnhanced.enhancedPassword && (
+          {analysis.score < 4 && analysis.aiEnhanced && (
             <div className="mt-6">
               <h3 className="font-medium text-md mb-3 flex items-center">
                 <Zap className="mr-2 h-4 w-4 text-yellow-500" />

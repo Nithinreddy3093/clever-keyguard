@@ -98,7 +98,7 @@ export const analyzePassword = (password: string): PasswordAnalysis => {
     "Online Attack (Throttled)": formatCrackTime(onlineCrackTime)
   };
 
-  // Generate AI enhanced password
+  // Generate AI enhanced password - ensure this is always created
   const aiEnhanced = enhancePassword(password, score);
   
   // Return comprehensive analysis
