@@ -1,548 +1,637 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, TimerIcon, Shield, Keyboard, Trophy } from "lucide-react";
+import { Terminal, Clock, Lock, Shield, CheckCircle, X, ZapOff, AlertTriangle, ArrowRight, Cpu } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import crypto from "crypto-js";
-
-const commonPasswords = [
-  "password", "123456", "qwerty", "admin", "welcome", 
-  "football", "baseball", "dragon", "sunshine", "monkey",
-  "letmein", "abc123", "111111", "mustang", "shadow"
-];
 
 interface BruteForceGameProps {
   onComplete: (score: number) => void;
 }
 
+type PasswordCharacterState = {
+  char: string;
+  status: "correct" | "wrong-position" | "incorrect" | "unknown";
+};
+
 const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
-  const [gameStarted, setGameStarted] = useState(false);
-  const [currentRound, setCurrentRound] = useState(1);
-  const [totalRounds] = useState(5);
-  const [timeLeft, setTimeLeft] = useState(30);
-  const [targetPassword, setTargetPassword] = useState("");
-  const [userGuess, setUserGuess] = useState("");
-  const [attackHints, setAttackHints] = useState<string[]>([]);
-  const [score, setScore] = useState(0);
-  const [feedbackMessage, setFeedbackMessage] = useState("");
-  const [gameComplete, setGameComplete] = useState(false);
-  const [crackedPasswords, setCrackedPasswords] = useState<string[]>([]);
-  const [username, setUsername] = useState("");
-  const [savingScore, setSavingScore] = useState(false);
-  const [currentStreak, setCurrentStreak] = useState(0);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const [targetPassword, setTargetPassword] = useState("");
+  const [guess, setGuess] = useState("");
+  const [attempts, setAttempts] = useState<string[]>([]);
+  const [attemptResults, setAttemptResults] = useState<PasswordCharacterState[][]>([]);
+  const [gameComplete, setGameComplete] = useState(false);
+  const [victory, setVictory] = useState(false);
+  const [firewallHealth, setFirewallHealth] = useState(100);
+  const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("easy");
+  const [timer, setTimer] = useState(0);
+  const [score, setScore] = useState(0);
+  const [remainingGuesses, setRemainingGuesses] = useState(10);
+  const [hintUsed, setHintUsed] = useState(false);
+  const [bruteForceModeActive, setBruteForceModeActive] = useState(false);
+  const [bruteForceCooldown, setBruteForceCooldown] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Load username from localStorage
+  // Password pools by difficulty
+  const passwordPools = {
+    easy: [
+      "admin", "login", "secure", "server", "access",
+      "system", "network", "portal", "digital", "cyber"
+    ],
+    medium: [
+      "secure123", "network01", "admin2023", "Portal!21", "Access#99",
+      "Server2022", "System!23", "Tech#User", "Data$2023", "WebAccess1"
+    ],
+    hard: [
+      "S3cur3_N3tw0rk!", "Adm1n@P0rtal#22", "Syst3m$Acc3ss99", "D@ta_S3rv3r!21", "N3tw0rk#Us3r!23",
+      "C0rp0r@te$2023!", "S3rv3r@Acc3ss#1", "Digit@l_P0rt@l!22", "T3ch$Pl@tf0rm#1", "S3cur3_L0g1n!23"
+    ]
+  };
+
+  // Initialize the game with a random password
   useEffect(() => {
-    const storedUsername = localStorage.getItem("shadowTierUsername") || localStorage.getItem("passwordGameUsername");
-    if (storedUsername) {
-      setUsername(storedUsername);
-    }
-    
-    // Get current streak
-    fetchUserStreak();
-  }, [user]);
-
-  // Fetch user's streak
-  const fetchUserStreak = async () => {
-    if (!user) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from("password_history")
-        .select("daily_streak")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1);
-        
-      if (error) {
-        console.error("Error fetching user streak:", error);
-        return;
-      }
-      
-      if (data && Array.isArray(data) && data.length > 0) {
-        setCurrentStreak(data[0].daily_streak || 0);
-      }
-    } catch (error) {
-      console.error("Error fetching user streak:", error);
-    }
-  };
-
-  // Update user streak
-  const updateUserStreak = async () => {
-    if (!user) return currentStreak;
-    
-    try {
-      // Get current streak
-      const { data: streakData, error: streakError } = await supabase
-        .from("password_history")
-        .select("daily_streak, last_interaction_date")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      
-      if (streakError) {
-        console.error("Error fetching streak data:", streakError);
-        return currentStreak;
-      }
-      
-      let userStreak = currentStreak;
-      let lastDate = null;
-      
-      if (streakData && Array.isArray(streakData) && streakData.length > 0) {
-        userStreak = streakData[0].daily_streak || 0;
-        lastDate = streakData[0].last_interaction_date;
-      }
-      
-      // Check if last interaction was yesterday or earlier
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      const lastInteraction = lastDate ? new Date(lastDate) : null;
-      if (lastInteraction) {
-        lastInteraction.setHours(0, 0, 0, 0);
-      }
-      
-      // Calculate days difference
-      const daysDiff = lastInteraction 
-        ? Math.floor((today.getTime() - lastInteraction.getTime()) / (1000 * 60 * 60 * 24))
-        : 1;
-      
-      // Update streak based on days difference
-      let newStreak = userStreak;
-      if (daysDiff === 1) {
-        // Yesterday - increment streak
-        newStreak = userStreak + 1;
-      } else if (daysDiff > 1) {
-        // More than a day - reset streak
-        newStreak = 1;
-      } else if (daysDiff === 0) {
-        // Same day - no change to streak
-        newStreak = Math.max(userStreak, 1);
-      }
-      
-      return newStreak;
-    } catch (error) {
-      console.error("Error updating streak:", error);
-      return currentStreak;
-    }
-  };
-
-  // Start the game
-  const startGame = () => {
-    setGameStarted(true);
-    setCurrentRound(1);
-    setScore(0);
-    setCrackedPasswords([]);
-    selectNewPasswordTarget();
-  };
-
-  // Select a new password target for the current round
-  const selectNewPasswordTarget = () => {
-    const randomIndex = Math.floor(Math.random() * commonPasswords.length);
-    const newTarget = commonPasswords[randomIndex];
-    setTargetPassword(newTarget);
-    setTimeLeft(30);
-    setUserGuess("");
-    setAttackHints([]);
-    setFeedbackMessage("");
-
-    // Generate hints based on password complexity
-    generateHints(newTarget);
-  };
-
-  // Generate hints for the current password
-  const generateHints = (password: string) => {
-    const hints = [];
-    
-    // Length hint
-    hints.push(`Length: ${password.length} characters`);
-    
-    // Character type hints
-    if (/[0-9]/.test(password)) {
-      hints.push("Contains numbers");
-    }
-    if (/[a-z]/.test(password)) {
-      hints.push("Contains lowercase letters");
-    }
-    if (/[A-Z]/.test(password)) {
-      hints.push("Contains uppercase letters");
-    }
-    if (/[^a-zA-Z0-9]/.test(password)) {
-      hints.push("Contains special characters");
-    }
-
-    // First character hint
-    hints.push(`First character: ${password[0]}`);
-    
-    setAttackHints(hints);
-  };
-
-  // Check the user's guess
-  const checkGuess = () => {
-    if (userGuess.toLowerCase() === targetPassword.toLowerCase()) {
-      // Success
-      const roundScore = Math.ceil(timeLeft * 10);
-      const newScore = score + roundScore;
-      setScore(newScore);
-      
-      setCrackedPasswords([...crackedPasswords, targetPassword]);
-      
-      toast({
-        title: "Password Cracked!",
-        description: `Password "${targetPassword}" successfully hacked! +${roundScore} points`,
-        variant: "default", // Changed from "success" to "default"
-      });
-      
-      setFeedbackMessage("Password cracked successfully! Moving to next target...");
-      
-      // Move to next round or end game
-      if (currentRound >= totalRounds) {
-        endGame(newScore);
-      } else {
-        setTimeout(() => {
-          setCurrentRound(currentRound + 1);
-          selectNewPasswordTarget();
-        }, 2000);
-      }
-    } else {
-      // Wrong guess
-      setFeedbackMessage("Incorrect password! Try again.");
-      // Apply small time penalty for wrong guesses
-      setTimeLeft(prev => Math.max(prev - 2, 0));
-    }
-  };
-
-  // Save the score to Supabase
-  const saveScoreToRankings = async (finalScore: number) => {
-    if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to save your score to rankings",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!username.trim()) {
-      const randomUsername = `Hacker${Math.floor(Math.random() * 10000)}`;
-      setUsername(randomUsername);
-      localStorage.setItem("shadowTierUsername", randomUsername);
-      toast({
-        title: "Username generated",
-        description: `Using auto-generated username: ${randomUsername}`,
-      });
-    }
-
-    try {
-      setSavingScore(true);
-      const gameData = {
-        game_type: "brute_force",
-        rounds_completed: currentRound,
-        passwords_cracked: crackedPasswords.length,
-        time_remaining: timeLeft,
-      };
-      
-      const passwordHash = crypto.SHA256("game-score-" + Date.now()).toString();
-      const newStreak = await updateUserStreak();
-      
-      const { error } = await supabase.from("password_history").insert({
-        user_id: user.id,
-        password_hash: passwordHash,
-        score: finalScore,
-        length: 10, // Not relevant for game score
-        has_upper: true,
-        has_lower: true,
-        has_digit: true,
-        has_special: true,
-        is_common: false,
-        has_common_pattern: false,
-        entropy: 70,
-        metadata: { 
-          username: username,
-          game_data: gameData,
-          game_type: "brute_force",
-          streak: newStreak
-        },
-        daily_streak: newStreak,
-        last_interaction_date: new Date().toISOString().split('T')[0]
-      });
-      
-      if (error) throw error;
-      
-      setCurrentStreak(newStreak);
-      
-      toast({
-        title: "Score saved!",
-        description: `Your game score (${finalScore}) has been saved to the Shadow Realm rankings!`,
-      });
-    } catch (error: any) {
-      console.error("Error saving score:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save score to rankings",
-        variant: "destructive",
-      });
-    } finally {
-      setSavingScore(false);
-    }
-  };
-
-  // End the game
-  const endGame = (finalScore: number) => {
-    setGameComplete(true);
-    setGameStarted(false);
-    
-    toast({
-      title: "Game Complete!",
-      description: `You've completed the Hack the Password game with ${finalScore} points!`,
-    });
-    
-    onComplete(finalScore);
-    
-    // Save score to rankings if user is logged in
-    if (user) {
-      saveScoreToRankings(finalScore);
-    }
-  };
+    resetGame(difficulty);
+  }, [difficulty]);
 
   // Timer effect
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let interval: NodeJS.Timeout | null = null;
     
-    if (gameStarted && timeLeft > 0) {
-      timer = setTimeout(() => {
-        setTimeLeft(timeLeft - 1);
+    if (!gameComplete) {
+      interval = setInterval(() => {
+        setTimer(prevTimer => prevTimer + 1);
       }, 1000);
-    } else if (gameStarted && timeLeft === 0) {
-      toast({
-        title: "Time's Up!",
-        description: "You ran out of time to crack this password.",
-        variant: "destructive",
-      });
+    }
+    
+    // Brute force cooldown timer
+    if (bruteForceCooldown > 0 && !gameComplete) {
+      const bruteForceCooldownInterval = setInterval(() => {
+        setBruteForceCooldown(prev => Math.max(0, prev - 1));
+      }, 1000);
       
-      setFeedbackMessage(`Time's up! The password was "${targetPassword}"`);
-      
-      // Move to next round or end game
-      if (currentRound >= totalRounds) {
-        endGame(score);
-      } else {
-        setTimeout(() => {
-          setCurrentRound(currentRound + 1);
-          selectNewPasswordTarget();
-        }, 2000);
-      }
+      return () => {
+        clearInterval(interval!);
+        clearInterval(bruteForceCooldownInterval);
+      };
     }
     
     return () => {
-      if (timer) clearTimeout(timer);
+      if (interval) clearInterval(interval);
     };
-  }, [gameStarted, timeLeft]);
+  }, [gameComplete, bruteForceCooldown]);
+
+  // Reset game with selected difficulty
+  const resetGame = (gameDifficulty: "easy" | "medium" | "hard") => {
+    // Select random password from pool
+    const pool = passwordPools[gameDifficulty];
+    const randomPassword = pool[Math.floor(Math.random() * pool.length)];
+    
+    setTargetPassword(randomPassword);
+    setGuess("");
+    setAttempts([]);
+    setAttemptResults([]);
+    setGameComplete(false);
+    setVictory(false);
+    setTimer(0);
+    setHintUsed(false);
+    setBruteForceModeActive(false);
+    setBruteForceCooldown(0);
+    
+    // Set firewall health and remaining guesses based on difficulty
+    if (gameDifficulty === "easy") {
+      setFirewallHealth(100);
+      setRemainingGuesses(10);
+    } else if (gameDifficulty === "medium") {
+      setFirewallHealth(80);
+      setRemainingGuesses(8);
+    } else {
+      setFirewallHealth(60);
+      setRemainingGuesses(6);
+    }
+    
+    // Focus input
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+
+  // Handle guess submission
+  const handleGuess = () => {
+    if (!guess || gameComplete) return;
+    
+    // Add to attempts list
+    const newAttempts = [...attempts, guess];
+    setAttempts(newAttempts);
+    
+    // Check result with Wordle-like feedback
+    const result = checkGuess(guess);
+    const newResults = [...attemptResults, result];
+    setAttemptResults(newResults);
+    
+    // Reduce firewall health (more for incorrect guesses)
+    const correctChars = result.filter(r => r.status === "correct").length;
+    const percentCorrect = (correctChars / targetPassword.length) * 100;
+    
+    // Health reduction based on how incorrect the guess is
+    const healthReduction = Math.max(5, 20 - Math.floor(percentCorrect / 5));
+    setFirewallHealth(prevHealth => Math.max(0, prevHealth - healthReduction));
+    
+    // Decrement remaining guesses
+    setRemainingGuesses(prev => prev - 1);
+    
+    // Check for victory
+    if (guess.toLowerCase() === targetPassword.toLowerCase()) {
+      handleVictory();
+    }
+    // Check for game over conditions
+    else if (remainingGuesses <= 1 || firewallHealth - healthReduction <= 0) {
+      handleGameOver();
+    }
+    
+    // Reset guess field
+    setGuess("");
+  };
+
+  // Check guess against target password
+  const checkGuess = (currentGuess: string): PasswordCharacterState[] => {
+    const result: PasswordCharacterState[] = [];
+    const target = targetPassword.toLowerCase();
+    const guessLower = currentGuess.toLowerCase();
+    
+    // First pass: find exact matches
+    const targetChars = target.split('');
+    const usedTargetIndices: boolean[] = Array(target.length).fill(false);
+    
+    // First mark correct positions
+    for (let i = 0; i < guessLower.length; i++) {
+      if (i < target.length && guessLower[i] === target[i]) {
+        result.push({ char: currentGuess[i], status: "correct" });
+        usedTargetIndices[i] = true;
+      } else if (i >= target.length) {
+        // Extra characters
+        result.push({ char: currentGuess[i], status: "incorrect" });
+      } else {
+        result.push({ char: currentGuess[i], status: "unknown" });
+      }
+    }
+    
+    // Fill in for shorter guesses
+    if (currentGuess.length < target.length) {
+      for (let i = currentGuess.length; i < target.length; i++) {
+        result.push({ char: " ", status: "unknown" });
+      }
+    }
+    
+    // Second pass: find wrong positions
+    for (let i = 0; i < result.length; i++) {
+      if (result[i].status === "unknown") {
+        const char = guessLower[i];
+        let foundInWrongPosition = false;
+        
+        for (let j = 0; j < target.length; j++) {
+          if (!usedTargetIndices[j] && target[j] === char) {
+            result[i].status = "wrong-position";
+            usedTargetIndices[j] = true;
+            foundInWrongPosition = true;
+            break;
+          }
+        }
+        
+        if (!foundInWrongPosition) {
+          result[i].status = "incorrect";
+        }
+      }
+    }
+    
+    return result;
+  };
+
+  // Handle victory state
+  const handleVictory = () => {
+    setVictory(true);
+    setGameComplete(true);
+    
+    // Calculate score based on:
+    // - Remaining health
+    // - Time taken
+    // - Difficulty
+    // - Number of attempts
+    // - Whether hint was used
+    
+    const difficultyMultiplier = difficulty === "easy" ? 1 : difficulty === "medium" ? 1.5 : 2;
+    const healthBonus = Math.round(firewallHealth / 2);
+    const attemptsBonus = Math.max(0, 30 - (attempts.length * 5));
+    const timeBonus = Math.max(0, 30 - Math.min(30, Math.floor(timer / 10)));
+    const hintPenalty = hintUsed ? -15 : 0;
+    
+    const rawScore = Math.round((healthBonus + attemptsBonus + timeBonus + hintPenalty) * difficultyMultiplier);
+    const finalScore = Math.min(100, Math.max(0, rawScore));
+    
+    setScore(finalScore);
+    
+    // Special achievement for very quick wins
+    if (attempts.length <= 3) {
+      toast({
+        title: "Hacker Extraordinaire!",
+        description: "You cracked the password in 3 or fewer attempts!",
+        duration: 3000,
+      });
+    }
+    
+    toast({
+      title: "Access Granted!",
+      description: "You've successfully hacked the system!",
+      duration: 2000,
+    });
+    
+    // Notify completion after a short delay
+    setTimeout(() => {
+      onComplete(finalScore);
+    }, 2000);
+  };
+
+  // Handle game over state
+  const handleGameOver = () => {
+    setVictory(false);
+    setGameComplete(true);
+    
+    const difficultyValue = difficulty === "easy" ? 10 : difficulty === "medium" ? 20 : 30;
+    const attemptsValue = Math.min(20, attempts.length * 3);
+    
+    // Even on loss, award some points for effort
+    const consolationScore = Math.min(40, difficultyValue + attemptsValue);
+    setScore(consolationScore);
+    
+    toast({
+      title: "Security Alert!",
+      description: "The system detected your breach attempt and locked down.",
+      variant: "destructive",
+      duration: 2000,
+    });
+    
+    // Notify completion after a short delay
+    setTimeout(() => {
+      onComplete(consolationScore);
+    }, 2000);
+  };
+
+  // Get hint - reveals one character
+  const getHint = () => {
+    if (hintUsed || gameComplete) return;
+    
+    // Find a character position to reveal
+    const existingCorrectPositions = new Set<number>();
+    attemptResults.forEach(result => {
+      result.forEach((char, idx) => {
+        if (char.status === "correct") {
+          existingCorrectPositions.add(idx);
+        }
+      });
+    });
+    
+    // Find positions not yet guessed correctly
+    const possiblePositions = [];
+    for (let i = 0; i < targetPassword.length; i++) {
+      if (!existingCorrectPositions.has(i)) {
+        possiblePositions.push(i);
+      }
+    }
+    
+    // If all positions have been guessed correctly, can't give hint
+    if (possiblePositions.length === 0) {
+      toast({
+        title: "No Hint Available",
+        description: "You've already discovered all characters correctly!",
+        duration: 2000,
+      });
+      return;
+    }
+    
+    // Choose a random position to reveal
+    const revealPosition = possiblePositions[Math.floor(Math.random() * possiblePositions.length)];
+    
+    toast({
+      title: "Hint Activated",
+      description: `Character at position ${revealPosition + 1} is "${targetPassword[revealPosition]}"`,
+      duration: 3000,
+    });
+    
+    // Mark hint as used
+    setHintUsed(true);
+    
+    // Health penalty for using hint
+    setFirewallHealth(prevHealth => Math.max(0, prevHealth - 15));
+  };
+
+  // Activate brute force mode
+  const activateBruteForce = () => {
+    if (bruteForceModeActive || bruteForceCooldown > 0 || gameComplete) return;
+    
+    setBruteForceModeActive(true);
+    
+    // For gameplay purposes, brute force gives a likely character
+    const knownPositions = new Map<number, string>();
+    
+    // Collect known correct characters
+    attemptResults.forEach(result => {
+      result.forEach((char, idx) => {
+        if (char.status === "correct") {
+          knownPositions.set(idx, char.char);
+        }
+      });
+    });
+    
+    // Choose a position we don't know yet
+    const unknownPositions = [];
+    for (let i = 0; i < targetPassword.length; i++) {
+      if (!knownPositions.has(i)) {
+        unknownPositions.push(i);
+      }
+    }
+    
+    // If we know all positions, brute force is not needed
+    if (unknownPositions.length === 0) {
+      toast({
+        title: "Brute Force Failed",
+        description: "You've already discovered all characters!",
+        variant: "destructive",
+        duration: 2000,
+      });
+      setBruteForceModeActive(false);
+      return;
+    }
+    
+    // Show "brute forcing" animation for a few seconds
+    let progress = 0;
+    const totalSteps = 5;
+    const interval = setInterval(() => {
+      progress++;
+      
+      if (progress <= totalSteps) {
+        toast({
+          title: `Brute forcing... (${progress}/${totalSteps})`,
+          description: "Scanning possible character combinations...",
+          duration: 1000,
+        });
+      } else {
+        clearInterval(interval);
+        
+        // Pick a random unknown position
+        const targetPos = unknownPositions[Math.floor(Math.random() * unknownPositions.length)];
+        
+        // Return potential characters for this position (include correct one)
+        const correctChar = targetPassword[targetPos].toLowerCase();
+        
+        // Create a set of potential characters with the correct one included
+        const charPool = "abcdefghijklmnopqrstuvwxyz0123456789!@#$%";
+        let potentialChars = new Set([correctChar]);
+        
+        // Add 2-4 random characters
+        const numExtra = Math.floor(Math.random() * 3) + 2;
+        for (let i = 0; i < numExtra; i++) {
+          const randomChar = charPool[Math.floor(Math.random() * charPool.length)];
+          potentialChars.add(randomChar);
+        }
+        
+        toast({
+          title: "Brute Force Results",
+          description: `Position ${targetPos + 1} likely contains one of: ${[...potentialChars].join(', ')}`,
+          duration: 3000,
+        });
+        
+        // Health penalty
+        setFirewallHealth(prevHealth => Math.max(0, prevHealth - 25));
+        
+        // Set cooldown
+        setBruteForceModeActive(false);
+        setBruteForceCooldown(15); // 15 second cooldown
+      }
+    }, 1000);
+  };
 
   return (
-    <div className="flex flex-col space-y-6">
-      {!gameStarted && !gameComplete ? (
-        <motion.div 
-          className="text-center space-y-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h3 className="text-xl font-bold">Hack the Password</h3>
-          <p className="text-slate-600 dark:text-slate-400 mb-4">
-            You're an ethical hacker practicing against a database of common passwords. 
-            Use the hints provided to guess each weak password within the time limit.
-          </p>
-          
-          {user && (
-            <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg mb-4">
-              <div className="flex items-center justify-center">
-                <Trophy className="h-5 w-5 text-amber-500 mr-2" />
-                <p className="text-sm">
-                  Your scores will be saved to the Shadow Realm Rankings!
-                </p>
-              </div>
-              {currentStreak > 0 && (
-                <p className="text-xs text-center mt-2 text-amber-600 dark:text-amber-400">
-                  Current streak: {currentStreak} day{currentStreak !== 1 ? 's' : ''}
-                </p>
-              )}
+    <div className="space-y-6">
+      {!gameComplete ? (
+        <>
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h3 className="text-lg font-medium flex items-center">
+                <Terminal className="mr-2 h-5 w-5" /> 
+                Terminal Breach
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Crack the password using strategic guesses
+              </p>
             </div>
-          )}
-          
-          <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg mb-4">
-            <h4 className="font-semibold mb-2">Game Rules:</h4>
-            <ul className="list-disc list-inside text-left text-sm space-y-1">
-              <li>You'll have 30 seconds to crack each password</li>
-              <li>Hints will be provided based on the password's characteristics</li>
-              <li>Points are awarded based on how quickly you crack each password</li>
-              <li>Incorrect guesses will cost you 2 seconds</li>
-              <li>Complete 5 rounds to finish the game</li>
-            </ul>
-          </div>
-          
-          <Button 
-            onClick={startGame}
-            size="lg" 
-            className="bg-red-500 hover:bg-red-600 text-white"
-          >
-            Start Hacking
-          </Button>
-        </motion.div>
-      ) : gameComplete ? (
-        <motion.div 
-          className="text-center space-y-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h3 className="text-2xl font-bold">Game Complete!</h3>
-          <div className="py-6">
-            <span className="text-4xl font-bold text-primary">{score}</span>
-            <p className="text-slate-500 dark:text-slate-400">Final Score</p>
-          </div>
-          
-          <div className="space-y-2">
-            <h4 className="font-semibold">Passwords Cracked:</h4>
-            <div className="flex flex-wrap gap-2 justify-center">
-              {crackedPasswords.map((password, index) => (
-                <Badge key={index} className="py-2">
-                  {password}
-                </Badge>
-              ))}
-            </div>
-          </div>
-          
-          {user && (
-            <div className={`p-4 rounded-lg ${savingScore ? "bg-blue-50 dark:bg-blue-900/20" : "bg-green-50 dark:bg-green-900/20"}`}>
-              <div className="flex items-center justify-center">
-                <Trophy className={`h-5 w-5 mr-2 ${savingScore ? "text-blue-500" : "text-green-500"}`} />
-                <p className="text-sm">
-                  {savingScore ? "Saving your score to the Shadow Realm..." : "Your score has been saved to the Shadow Realm Rankings!"}
-                </p>
-              </div>
-            </div>
-          )}
-          
-          <div className="pt-4">
-            <Button 
-              onClick={() => {
-                setGameComplete(false);
-              }} 
-              variant="outline" 
-              className="mr-2"
-            >
-              Close
-            </Button>
-            <Button 
-              onClick={startGame}
-            >
-              Play Again
-            </Button>
-          </div>
-        </motion.div>
-      ) : (
-        <motion.div 
-          className="space-y-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          <div className="flex justify-between items-center">
-            <div className="flex items-center">
-              <Badge 
-                variant="outline" 
-                className="mr-2 bg-slate-100 dark:bg-slate-800"
-              >
-                Round {currentRound}/{totalRounds}
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="bg-primary/10">
+                <Clock className="h-3.5 w-3.5 mr-1" /> {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}
+              </Badge>
+              <Badge variant="outline" className="bg-primary/10">
+                Attempts: {attempts.length}/{remainingGuesses}
               </Badge>
             </div>
-            <div className="flex items-center">
-              <TimerIcon className="h-4 w-4 mr-1 text-amber-500" />
-              <span className={`font-mono ${timeLeft <= 10 ? 'text-red-500' : ''}`}>
-                {timeLeft}s
-              </span>
-            </div>
           </div>
           
-          <div>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center">
+                <Shield className="h-4 w-4 mr-1.5 text-blue-500" />
+                <span className="text-sm">Firewall Integrity</span>
+              </div>
+              <span className="text-xs text-muted-foreground">{firewallHealth}%</span>
+            </div>
             <Progress 
-              value={(timeLeft / 30) * 100} 
-              className="h-2"
-              indicatorClassName={timeLeft <= 10 ? "bg-red-500" : ""}
+              value={firewallHealth} 
+              className="h-2" 
+              indicatorClassName={
+                firewallHealth > 60 ? "bg-green-500" : 
+                firewallHealth > 30 ? "bg-yellow-500" : 
+                "bg-red-500"
+              } 
             />
           </div>
           
-          <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg">
-            <h4 className="text-sm font-semibold flex items-center mb-2">
-              <Shield className="h-4 w-4 mr-1 text-blue-500" />
-              Password Hints
-            </h4>
-            <ul className="text-sm space-y-1">
-              {attackHints.map((hint, index) => (
-                <li key={index} className="flex items-center">
-                  <span className="w-2 h-2 bg-primary rounded-full mr-2"></span>
-                  {hint}
-                </li>
+          <div className="space-y-4">
+            <div className="flex flex-col gap-4 mb-6">
+              {/* Display previous attempts with Wordle-style feedback */}
+              {attemptResults.map((result, index) => (
+                <div key={index} className="flex justify-center gap-1">
+                  {result.map((charState, charIndex) => (
+                    <div 
+                      key={`${index}-${charIndex}`} 
+                      className={`w-10 h-10 flex items-center justify-center font-mono text-lg border rounded-md ${
+                        charState.status === "correct" 
+                          ? "bg-green-500 text-white border-green-600" 
+                          : charState.status === "wrong-position" 
+                            ? "bg-yellow-500 text-white border-yellow-600" 
+                            : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"
+                      }`}
+                    >
+                      {charState.char}
+                    </div>
+                  ))}
+                </div>
               ))}
-            </ul>
-          </div>
-          
-          <div>
-            <label className="text-sm font-medium flex items-center mb-2">
-              <Keyboard className="h-4 w-4 mr-1 text-indigo-500" />
-              Enter Password
-            </label>
-            <div className="flex space-x-2">
+            </div>
+            
+            {/* Current guess input */}
+            <div className="flex gap-2">
               <Input
+                ref={inputRef}
                 type="text"
-                value={userGuess}
-                onChange={(e) => setUserGuess(e.target.value)}
-                placeholder="Type your guess here..."
+                value={guess}
+                onChange={(e) => setGuess(e.target.value.slice(0, targetPassword.length + 2))} // Allow slightly longer than target
+                onKeyDown={(e) => e.key === "Enter" && handleGuess()}
+                placeholder="Enter password guess..."
                 className="font-mono"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') checkGuess();
-                }}
+                autoFocus
               />
-              <Button onClick={checkGuess}>Try</Button>
+              <Button onClick={handleGuess}>Try</Button>
+            </div>
+            
+            {/* Legend */}
+            <div className="flex justify-center gap-6 text-xs text-muted-foreground my-4">
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-green-500 rounded mr-1.5"></div>
+                <span>Correct position</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-yellow-500 rounded mr-1.5"></div>
+                <span>Wrong position</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-gray-200 dark:bg-gray-700 rounded mr-1.5"></div>
+                <span>Not in password</span>
+              </div>
             </div>
           </div>
           
-          {feedbackMessage && (
-            <motion.div 
-              className={`p-3 rounded-lg ${
-                feedbackMessage.includes("successfully") 
-                  ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200" 
-                  : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200"
-              }`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="flex items-center">
-                {feedbackMessage.includes("successfully") ? (
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                ) : (
-                  <XCircle className="h-4 w-4 mr-2" />
-                )}
-                {feedbackMessage}
+          <div className="grid grid-cols-2 gap-3 mt-6">
+            <Card className="hover:border-primary transition-colors">
+              <CardContent className="p-3 flex flex-col items-center text-center">
+                <Button 
+                  variant={hintUsed ? "outline" : "default"}
+                  disabled={hintUsed}
+                  onClick={getHint}
+                  className="w-full mb-2"
+                >
+                  <Lock className="h-4 w-4 mr-1.5" /> Get Hint
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Reveals one character position (-15% health)
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="hover:border-primary transition-colors">
+              <CardContent className="p-3 flex flex-col items-center text-center">
+                <Button 
+                  variant={bruteForceCooldown > 0 ? "outline" : "default"}
+                  disabled={bruteForceCooldown > 0 || bruteForceModeActive}
+                  onClick={activateBruteForce}
+                  className="w-full mb-2"
+                >
+                  <Cpu className="h-4 w-4 mr-1.5" /> 
+                  {bruteForceCooldown > 0 
+                    ? `Cooldown (${bruteForceCooldown}s)` 
+                    : "Brute Force"}
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Tests multiple characters (-25% health)
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="flex justify-between mt-4">
+            <div className="space-y-1">
+              <div className="text-xs font-medium">Difficulty</div>
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant={difficulty === "easy" ? "default" : "outline"}
+                  className="h-7 text-xs"
+                  onClick={() => difficulty !== "easy" && resetGame("easy")}
+                >
+                  Easy
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant={difficulty === "medium" ? "default" : "outline"}
+                  className="h-7 text-xs"
+                  onClick={() => difficulty !== "medium" && resetGame("medium")}
+                >
+                  Medium
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant={difficulty === "hard" ? "default" : "outline"}
+                  className="h-7 text-xs"
+                  onClick={() => difficulty !== "hard" && resetGame("hard")}
+                >
+                  Hard
+                </Button>
               </div>
-            </motion.div>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => resetGame(difficulty)}>
+              <RefreshCw className="h-3.5 w-3.5 mr-1" /> Reset
+            </Button>
+          </div>
+        </>
+      ) : (
+        <div className="text-center py-8">
+          {victory ? (
+            <>
+              <CheckCircle className="h-16 w-16 mx-auto text-green-500 mb-6" />
+              <h3 className="text-2xl font-bold mb-2">Access Granted!</h3>
+              <p className="text-lg mb-4">
+                Password: <span className="font-mono font-bold">{targetPassword}</span>
+              </p>
+              <div className="mb-6">
+                <p className="text-3xl font-bold text-primary">{score}/100</p>
+                <p className="text-sm text-slate-500">
+                  Cracked in {attempts.length} {attempts.length === 1 ? 'attempt' : 'attempts'} 
+                  with {firewallHealth}% firewall remaining
+                </p>
+                
+                {attempts.length <= 3 && (
+                  <div className="mt-4 p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg border border-amber-300 dark:border-amber-700">
+                    <p className="font-medium text-amber-800 dark:text-amber-300">Achievement Unlocked!</p>
+                    <p className="text-sm">Hacker Toolset: Cracked in 3 or fewer attempts</p>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <AlertTriangle className="h-16 w-16 mx-auto text-red-500 mb-6" />
+              <h3 className="text-2xl font-bold mb-2">Access Denied!</h3>
+              <p className="mb-4">
+                The system detected your attempt and blocked access.
+              </p>
+              <div className="mb-6">
+                <p className="text-lg mb-2">
+                  Password was: <span className="font-mono font-bold">{targetPassword}</span>
+                </p>
+                <p className="text-sm text-slate-500">
+                  Score: <span className="font-medium">{score}</span>/100
+                </p>
+              </div>
+            </>
           )}
           
-          <div className="pt-2">
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Current Score: <span className="font-semibold text-primary">{score}</span>
-            </p>
+          <div className="flex flex-col sm:flex-row justify-center gap-3">
+            <Button variant="outline" onClick={() => resetGame(difficulty)}>
+              <RefreshCw className="h-4 w-4 mr-2" /> Try Again
+            </Button>
+            <Button onClick={() => onComplete(score)}>
+              Continue <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
           </div>
-        </motion.div>
+        </div>
       )}
     </div>
   );

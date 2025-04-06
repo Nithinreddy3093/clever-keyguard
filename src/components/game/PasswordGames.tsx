@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Gamepad2, Lock, PhoneIcon, Brain, X, Trophy, Shield, Swords, Puzzle, Zap } from "lucide-react";
+import { Gamepad2, Lock, PhoneIcon, Brain, X, Trophy, Shield, Swords, Puzzle, Zap, Terminal, Target } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import BruteForceGame from "./games/BruteForceGame";
 import PhishingGame from "./games/PhishingGame";
@@ -26,17 +26,17 @@ const PasswordGames = () => {
   const games = [
     {
       id: "bruteforce",
-      title: "Hack the Password",
-      description: "Test your skills against common passwords in a realistic hacking scenario.",
-      icon: <Lock className="h-6 w-6" />,
-      difficulty: "Beginner",
-      baseXp: 100,
+      title: "Terminal Breach",
+      description: "Crack the system password with strategic guesses and clever deduction in this Wordle-style hacking game.",
+      icon: <Terminal className="h-6 w-6" />,
+      difficulty: "Intermediate",
+      baseXp: 120,
       component: (props: any) => <BruteForceGame {...props} />
     },
     {
       id: "strengthchallenge",
-      title: "Password Strength Challenge",
-      description: "Identify the strongest passwords and improve your security awareness.",
+      title: "Entropy Arena",
+      description: "Test your password strength judgment and transform weak passwords into unbreakable ones.",
       icon: <Shield className="h-6 w-6" />,
       difficulty: "Beginner",
       baseXp: 100,
@@ -44,17 +44,17 @@ const PasswordGames = () => {
     },
     {
       id: "phishing",
-      title: "Phishing Mastermind",
-      description: "Spot phishing attempts and protect your credentials in this security awareness game.",
-      icon: <PhoneIcon className="h-6 w-6" />,
+      title: "Hook or Hoax?",
+      description: "Train your eye to spot sophisticated phishing attempts across emails, SMS, and social messages.",
+      icon: <Target className="h-6 w-6" />,
       difficulty: "Intermediate",
       baseXp: 150,
       component: (props: any) => <PhishingGame {...props} />
     },
     {
       id: "passwordmatching",
-      title: "Password Matching Challenge",
-      description: "Match weak passwords with their stronger alternatives in this memory game.",
+      title: "Cipher Sync",
+      description: "Match weak passwords with stronger alternatives in this multi-level memory game with encoded challenges.",
       icon: <Puzzle className="h-6 w-6" />,
       difficulty: "Beginner",
       baseXp: 125,
@@ -71,8 +71,8 @@ const PasswordGames = () => {
     },
     {
       id: "hackingdefense",
-      title: "Hacking Defense",
-      description: "Learn to defend against different password attack vectors in this interactive simulation.",
+      title: "Firewall Frenzy",
+      description: "Defend your system against waves of increasingly sophisticated cyber attacks with strategic countermeasures.",
       icon: <Zap className="h-6 w-6" />,
       difficulty: "Advanced",
       baseXp: 175,

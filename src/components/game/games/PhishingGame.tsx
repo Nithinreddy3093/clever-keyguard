@@ -1,510 +1,714 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TimerIcon, Check, X, AlertTriangle, ShieldCheck, Mail } from "lucide-react";
+import { 
+  AlertTriangle, CheckCircle, Clock, Mail, RefreshCw, X,
+  ArrowRight, MessageSquare, ShieldCheck, BadgeInfo, ShieldAlert
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { motion, AnimatePresence } from "framer-motion";
-
-// Phishing content samples
-const phishingContent = [
-  {
-    type: "email",
-    content: {
-      sender: "security@gooogle-secure.com",
-      subject: "Urgent: Your Google Account Has Been Compromised",
-      body: "Dear User, We have detected suspicious activity on your Google account. Click here to verify your identity within 24 hours or your account will be permanently deleted.",
-      url: "https://secure-google-verification.com/verify"
-    },
-    isPhishing: true,
-    explanation: "This is a phishing attempt. Notice the misspelled sender domain 'gooogle-secure.com' and suspicious URL that doesn't match official Google domains."
-  },
-  {
-    type: "email",
-    content: {
-      sender: "no-reply@amazon.com",
-      subject: "Your Amazon Order #A38972",
-      body: "Thank you for your recent Amazon order. Your package has shipped and will arrive on Thursday. Track your shipment with the link below.",
-      url: "https://amazon.com/orders/tracking"
-    },
-    isPhishing: false,
-    explanation: "This is a legitimate email. The sender domain matches the official Amazon domain, and the URL points to amazon.com without suspicious subdomains."
-  },
-  {
-    type: "website",
-    content: {
-      url: "https://paypa1.com/account/login",
-      title: "PayPal: Login to Your Account",
-      description: "Enter your email and password to access your PayPal account"
-    },
-    isPhishing: true,
-    explanation: "This is a phishing site. Notice the URL uses the number '1' instead of the letter 'l' in 'paypa1.com' to mimic the legitimate 'paypal.com'."
-  },
-  {
-    type: "website",
-    content: {
-      url: "https://www.microsoft.com/en-us/microsoft-365/outlook/email-and-calendar-software-microsoft-outlook",
-      title: "Microsoft Outlook | Email and Calendar",
-      description: "Outlook helps you manage your email, calendar, tasks, and contacts together in one place."
-    },
-    isPhishing: false,
-    explanation: "This is a legitimate Microsoft website with the official domain, proper HTTPS, and content consistent with Microsoft's branding."
-  },
-  {
-    type: "email",
-    content: {
-      sender: "accounts@netflix.support",
-      subject: "Netflix Payment Declined - Update Your Payment Method",
-      body: "Dear Customer, Your payment method has been declined. Please update your payment information within 24 hours to avoid service interruption. Click the link to update now.",
-      url: "https://netflix-billing-update.com/account"
-    },
-    isPhishing: true,
-    explanation: "This is a phishing attempt. Netflix uses 'netflix.com' for emails, not 'netflix.support'. The URL is also suspicious and not an official Netflix domain."
-  },
-  {
-    type: "website",
-    content: {
-      url: "https://www.bankofamerica.com/online-banking/sign-in/",
-      title: "Bank of America | Online Banking | Sign In",
-      description: "Sign in to your Online Banking account"
-    },
-    isPhishing: false,
-    explanation: "This is a legitimate Bank of America website with the correct domain and secure HTTPS connection."
-  },
-  {
-    type: "email",
-    content: {
-      sender: "support@appleid.apple.com",
-      subject: "Your Apple ID was used to sign in to iCloud",
-      body: "Dear Customer, Your Apple ID was used to sign in to iCloud on a new iPhone. If this was you, you can ignore this message. If you don't recognize this activity, visit appleid.apple.com to secure your account.",
-      url: "https://appleid.apple.com"
-    },
-    isPhishing: false,
-    explanation: "This is a legitimate security alert from Apple using their official domain and referring users to the correct Apple website."
-  },
-  {
-    type: "website",
-    content: {
-      url: "https://faceb00k.com/login/",
-      title: "Facebook - Log In or Sign Up",
-      description: "Create an account or log into Facebook. Connect with friends, family and other people you know."
-    },
-    isPhishing: true,
-    explanation: "This is a phishing site. Notice the URL uses zeros instead of 'o's in 'faceb00k.com' to mimic the legitimate 'facebook.com'."
-  },
-  {
-    type: "email",
-    content: {
-      sender: "noreply@dropbox.com",
-      subject: "Someone has shared a file with you",
-      body: "John Smith has shared a document with you. Click here to view the document.",
-      url: "https://www.dropbox.com/s/document"
-    },
-    isPhishing: false,
-    explanation: "This is a legitimate Dropbox email using their official domain and URL."
-  },
-  {
-    type: "website",
-    content: {
-      url: "https://accounts-google.com/signin",
-      title: "Sign in - Google Accounts",
-      description: "Use your Google Account to sign in to all Google services"
-    },
-    isPhishing: true,
-    explanation: "This is a phishing site. The legitimate Google sign-in URL is 'accounts.google.com' without a hyphen."
-  }
-];
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface PhishingGameProps {
   onComplete: (score: number) => void;
 }
 
+interface PhishingAttempt {
+  id: string;
+  sender: string;
+  subject: string;
+  content: string;
+  isPhishing: boolean;
+  timeReceived: string;
+  redFlags: RedFlag[];
+  type: 'email' | 'sms' | 'social';
+}
+
+interface RedFlag {
+  id: string;
+  description: string;
+  isCorrect: boolean;
+}
+
 const PhishingGame = ({ onComplete }: PhishingGameProps) => {
-  const [gameStarted, setGameStarted] = useState(false);
-  const [gameComplete, setGameComplete] = useState(false);
-  const [currentRound, setCurrentRound] = useState(1);
-  const [totalRounds] = useState(7);
-  const [timeLeft, setTimeLeft] = useState(20);
-  const [score, setScore] = useState(0);
-  const [currentContent, setCurrentContent] = useState<any>(null);
-  const [showExplanation, setShowExplanation] = useState(false);
-  const [explanationText, setExplanationText] = useState("");
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
-  const [usedContentIndices, setUsedContentIndices] = useState<number[]>([]);
-  const [streakCount, setStreakCount] = useState(0);
   const { toast } = useToast();
+  const [currentMessage, setCurrentMessage] = useState<number>(0);
+  const [score, setScore] = useState<number>(0);
+  const [timeLeft, setTimeLeft] = useState<number>(45);
+  const [gameComplete, setGameComplete] = useState<boolean>(false);
+  const [selectedFlags, setSelectedFlags] = useState<string[]>([]);
+  const [messageSubmitted, setMessageSubmitted] = useState<boolean>(false);
+  const [verdict, setVerdict] = useState<'phishing' | 'legitimate' | null>(null);
+  const [correctStreak, setCorrectStreak] = useState<number>(0);
+  const [multiplier, setMultiplier] = useState<number>(1);
+  const [hintAvailable, setHintAvailable] = useState<boolean>(true);
+  const [perfectScore, setPerfectScore] = useState<boolean>(true);
+  
+  // Sample phishing attempts
+  const phishingAttempts: PhishingAttempt[] = [
+    {
+      id: "email-1",
+      sender: "security@amaz0n-support.com",
+      subject: "URGENT: Your Amazon Account Has Been Compromised",
+      content: `Dear Valued Customer,
 
-  // Start the game
-  const startGame = () => {
-    setGameStarted(true);
-    setGameComplete(false);
-    setCurrentRound(1);
-    setScore(0);
-    setStreakCount(0);
-    setUsedContentIndices([]);
-    setTimeLeft(20);
-    setShowExplanation(false);
-    selectNewContent();
-  };
+We detected unusual activity on your Amazon account. Your account has been temporarily limited.
 
-  // Select new content for the round
-  const selectNewContent = () => {
-    // Find an unused piece of content
-    let availableIndices = Array.from(
-      { length: phishingContent.length },
-      (_, i) => i
-    ).filter(i => !usedContentIndices.includes(i));
-    
-    // If we've used all content, reset
-    if (availableIndices.length === 0) {
-      setUsedContentIndices([]);
-      availableIndices = Array.from(
-        { length: phishingContent.length },
-        (_, i) => i
-      );
+Click the link below to verify your information:
+https://amazon-security-verify.com/login
+
+This is urgent! If you don't verify within 24 hours, your account will be permanently closed.
+
+Amazon Security Team`,
+      isPhishing: true,
+      timeReceived: "10:23 AM",
+      redFlags: [
+        { id: "e1-f1", description: "Sender email domain (amaz0n-support.com) doesn't match official Amazon domain", isCorrect: true },
+        { id: "e1-f2", description: "Urgency language to pressure quick action", isCorrect: true },
+        { id: "e1-f3", description: "Suspicious URL (amazon-security-verify.com)", isCorrect: true },
+        { id: "e1-f4", description: "Threatening consequences if no action taken", isCorrect: true },
+        { id: "e1-f5", description: "The email mentions account security", isCorrect: false },
+        { id: "e1-f6", description: "The email has a generic greeting ('Dear Valued Customer')", isCorrect: true }
+      ],
+      type: 'email'
+    },
+    {
+      id: "sms-1",
+      sender: "FEDEX",
+      subject: "SMS Message",
+      content: `FEDEX: Your package is on hold due to missing delivery information. Update your delivery preferences here: http://fdx-delivery.info/update`,
+      isPhishing: true,
+      timeReceived: "2:15 PM",
+      redFlags: [
+        { id: "s1-f1", description: "Suspicious shortened or misleading URL", isCorrect: true },
+        { id: "s1-f2", description: "Lack of personalization or tracking number", isCorrect: true },
+        { id: "s1-f3", description: "FedEx typically doesn't send SMS about 'missing delivery information'", isCorrect: true },
+        { id: "s1-f4", description: "The message is from FedEx", isCorrect: false },
+        { id: "s1-f5", description: "The message mentions a package", isCorrect: false }
+      ],
+      type: 'sms'
+    },
+    {
+      id: "email-2",
+      sender: "newsletter@spotify.com",
+      subject: "Your Weekly Music Recommendations",
+      content: `Hey there,
+
+Check out new releases we think you'll love based on your recent listening:
+
+• New album from Taylor Swift
+• Podcasts about technology
+• Throwback playlist from the 90s
+
+Open Spotify to listen now.
+
+Manage subscription preferences in your account settings.
+
+- The Spotify Team`,
+      isPhishing: false,
+      timeReceived: "9:05 AM",
+      redFlags: [
+        { id: "e2-f1", description: "Generic greeting without name", isCorrect: false },
+        { id: "e2-f2", description: "The sender email is from an official domain (spotify.com)", isCorrect: false },
+        { id: "e2-f3", description: "Contains suspicious links", isCorrect: false },
+        { id: "e2-f4", description: "Asks for personal information", isCorrect: false },
+        { id: "e2-f5", description: "No urgency or threatening language", isCorrect: false }
+      ],
+      type: 'email'
+    },
+    {
+      id: "social-1",
+      sender: "Microsoft Support",
+      subject: "Direct Message",
+      content: `ATTENTION MICROSOFT USER: We've detected a virus on your computer. Message us now to get free virus removal tool or risk data loss within 24 hours. Click: https://bit.ly/ms-virus-removal`,
+      isPhishing: true,
+      timeReceived: "11:37 AM",
+      redFlags: [
+        { id: "so1-f1", description: "Unsolicited tech support message", isCorrect: true },
+        { id: "so1-f2", description: "Creates urgency and fear", isCorrect: true },
+        { id: "so1-f3", description: "Contains suspicious shortened link", isCorrect: true },
+        { id: "so1-f4", description: "Legitimate tech companies don't scan for viruses on your device remotely", isCorrect: true },
+        { id: "so1-f5", description: "The message mentions Microsoft", isCorrect: false },
+        { id: "so1-f6", description: "ALL CAPS used for emphasis", isCorrect: true }
+      ],
+      type: 'social'
+    },
+    {
+      id: "email-3",
+      sender: "no-reply@netflix.com",
+      subject: "Your Netflix Invoice",
+      content: `Hello,
+
+Your Netflix subscription was renewed. This month's charge: $14.99
+
+Subscription Plan: Standard HD
+Next billing date: November 16, 2024
+
+If you have questions about your billing, please visit netflix.com/account
+
+Thank you for being a valued Netflix member!
+
+Netflix Team`,
+      isPhishing: false,
+      timeReceived: "8:22 AM",
+      redFlags: [
+        { id: "e3-f1", description: "Contains suspicious links", isCorrect: false },
+        { id: "e3-f2", description: "The Netflix domain is incorrect", isCorrect: false },
+        { id: "e3-f3", description: "Asks for immediate action", isCorrect: false },
+        { id: "e3-f4", description: "Provides specific account details", isCorrect: false },
+        { id: "e3-f5", description: "Contains urgent language", isCorrect: false }
+      ],
+      type: 'email'
+    },
+    {
+      id: "sms-2",
+      sender: "+14325551234",
+      subject: "SMS Message",
+      content: `Hi this is your bank. Your card has been locked due to suspicious activity. To unlock: creditunion-verify.com/unlock?id=1293`,
+      isPhishing: true,
+      timeReceived: "3:45 PM",
+      redFlags: [
+        { id: "s2-f1", description: "No specific bank name mentioned", isCorrect: true },
+        { id: "s2-f2", description: "Suspicious or unrelated domain name", isCorrect: true },
+        { id: "s2-f3", description: "Sender uses generic phone number, not short code", isCorrect: true },
+        { id: "s2-f4", description: "Creates urgency with 'locked' language", isCorrect: true },
+        { id: "s2-f5", description: "Banks typically don't send SMS for card locks without identifying themselves properly", isCorrect: true },
+        { id: "s2-f6", description: "The message mentions banking", isCorrect: false }
+      ],
+      type: 'sms'
+    },
+    {
+      id: "email-4",
+      sender: "payments-update@paypal.com",
+      subject: "ACTION REQUIRED: Update Your PayPal Information",
+      content: `Dear Customer,
+
+We've noticed a problem with your PayPal account information. If it's not updated within 48 hours, your account access will be restricted.
+
+Click here: https://paypal-accountupdate.com
+
+Thank you for your cooperation.
+
+The PayPal Team`,
+      isPhishing: true,
+      timeReceived: "2:30 PM",
+      redFlags: [
+        { id: "e4-f1", description: "The URL isn't a legitimate PayPal domain", isCorrect: true },
+        { id: "e4-f2", description: "Generic greeting ('Dear Customer')", isCorrect: true },
+        { id: "e4-f3", description: "Creates false urgency", isCorrect: true },
+        { id: "e4-f4", description: "Threatening consequences", isCorrect: true },
+        { id: "e4-f5", description: "The message has 'ACTION REQUIRED' in the subject", isCorrect: false }
+      ],
+      type: 'email'
+    },
+    {
+      id: "social-2",
+      sender: "LinkedIn Connection",
+      subject: "Direct Message",
+      content: `Hi there! I noticed we're in the same industry. I've written a whitepaper on industry trends that might interest you. You can download it here: https://www.linkedin.com/pulse/technology-trends-2024-sarah-johnson/`,
+      isPhishing: false,
+      timeReceived: "10:12 AM",
+      redFlags: [
+        { id: "so2-f1", description: "Contains industry-specific content", isCorrect: false },
+        { id: "so2-f2", description: "The link is to a legitimate LinkedIn article", isCorrect: false },
+        { id: "so2-f3", description: "Requests sensitive information", isCorrect: false },
+        { id: "so2-f4", description: "Creates a sense of urgency", isCorrect: false },
+        { id: "so2-f5", description: "Offers business-relevant content", isCorrect: false }
+      ],
+      type: 'social'
+    },
+    {
+      id: "email-5",
+      sender: "support@apple.com",
+      subject: "Receipt for your recent Apple purchase",
+      content: `Dear Customer,
+
+Thank you for your recent purchase from the Apple Store.
+
+Order #APPL284691
+iPhone 13 Pro - $999.00
+AppleCare+ - $199.00
+Total: $1,198.00
+
+If you did not make this purchase, please call Apple Support at 1-800-MY-APPLE.
+
+Regards,
+Apple Customer Support`,
+      isPhishing: false,
+      timeReceived: "4:50 PM",
+      redFlags: [
+        { id: "e5-f1", description: "The email has an official Apple domain", isCorrect: false },
+        { id: "e5-f2", description: "Provides a legitimate Apple support phone number", isCorrect: false },
+        { id: "e5-f3", description: "Contains suspicious attachments", isCorrect: false },
+        { id: "e5-f4", description: "Uses threatening language", isCorrect: false },
+        { id: "e5-f5", description: "Offers a way to dispute unrecognized charges", isCorrect: false }
+      ],
+      type: 'email'
+    },
+    {
+      id: "sms-3",
+      sender: "ALERT",
+      subject: "SMS Message",
+      content: `ALERT: Unusual sign-in attempt detected on your Google account from Moscow, Russia. If not you, reset password here: security-google.co/reset`,
+      isPhishing: true,
+      timeReceived: "12:10 AM",
+      redFlags: [
+        { id: "s3-f1", description: "Sender is generic ('ALERT')", isCorrect: true },
+        { id: "s3-f2", description: "Suspicious domain (security-google.co not google.com)", isCorrect: true },
+        { id: "s3-f3", description: "Creates fear with 'unusual sign-in'", isCorrect: true },
+        { id: "s3-f4", description: "Mentions a specific location to seem legitimate", isCorrect: true },
+        { id: "s3-f5", description: "Google typically directs users to accounts.google.com, not third-party domains", isCorrect: true },
+        { id: "s3-f6", description: "The message mentions Google", isCorrect: false }
+      ],
+      type: 'sms'
     }
-    
-    // Select random content
-    const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
-    setCurrentContent(phishingContent[randomIndex]);
-    setUsedContentIndices([...usedContentIndices, randomIndex]);
-    
-    // Reset state for new round
-    setTimeLeft(20);
-    setShowExplanation(false);
-    setIsCorrect(null);
-  };
+  ];
 
-  // Handle user judgment
-  const judgeContent = (userAnswer: boolean) => {
-    const isUserCorrect = userAnswer === currentContent.isPhishing;
-    setIsCorrect(isUserCorrect);
-    
-    if (isUserCorrect) {
-      // Calculate points based on time left and streak
-      const newStreakCount = streakCount + 1;
-      setStreakCount(newStreakCount);
-      
-      const streakBonus = Math.floor(newStreakCount / 3) * 5;
-      const timeBonus = Math.floor(timeLeft * 2);
-      const roundScore = 10 + timeBonus + streakBonus;
-      
-      setScore(prev => prev + roundScore);
-      
-      toast({
-        title: "Correct!",
-        description: `+${roundScore} points${streakBonus > 0 ? ` (includes +${streakBonus} streak bonus)` : ""}`,
-      });
-    } else {
-      setStreakCount(0);
-      toast({
-        title: "Incorrect",
-        description: "Study the explanation carefully to learn the signs.",
-        variant: "destructive",
-      });
-    }
-    
-    setShowExplanation(true);
-    setExplanationText(currentContent.explanation);
-    
-    // After delay, move to next round or end game
-    setTimeout(() => {
-      if (currentRound >= totalRounds) {
-        endGame();
-      } else {
-        setCurrentRound(prev => prev + 1);
-        selectNewContent();
-      }
-    }, 3000);
-  };
-
-  // End the game
-  const endGame = () => {
-    setGameStarted(false);
-    setGameComplete(true);
-    
-    toast({
-      title: "Game Complete!",
-      description: `You've completed the Phishing Mastermind game with ${score} points!`,
-    });
-    
-    onComplete(score);
-  };
-
-  // Timer effect
+  // Initialize timer
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-    
-    if (gameStarted && timeLeft > 0 && !showExplanation) {
-      timer = setTimeout(() => {
-        setTimeLeft(timeLeft - 1);
+    if (!gameComplete && !messageSubmitted) {
+      const timer = setInterval(() => {
+        setTimeLeft(prevTime => {
+          if (prevTime <= 1) {
+            clearInterval(timer);
+            handleTimeOut();
+            return 0;
+          }
+          return prevTime - 1;
+        });
       }, 1000);
-    } else if (gameStarted && timeLeft === 0 && !showExplanation) {
-      // Time's up
-      setIsCorrect(false);
-      setShowExplanation(true);
-      setExplanationText(currentContent.explanation);
-      setStreakCount(0);
       
+      return () => clearInterval(timer);
+    }
+  }, [gameComplete, messageSubmitted]);
+
+  // Handle timeout
+  const handleTimeOut = () => {
+    if (!messageSubmitted) {
       toast({
-        title: "Time's Up!",
-        description: "You need to be faster to spot phishing attempts.",
-        variant: "destructive",
+        title: "Time's up!",
+        description: "You didn't make a decision in time.",
+        variant: "destructive"
       });
       
-      // After delay, move to next round or end game
+      // Mark as submitted and show explanation
+      setMessageSubmitted(true);
+      setVerdict(null);
+      
+      // Reset streak and multiplier
+      setCorrectStreak(0);
+      setMultiplier(1);
+      
+      // No perfect score if timeout occurred
+      setPerfectScore(false);
+      
+      // Move to next message after showing explanation
       setTimeout(() => {
-        if (currentRound >= totalRounds) {
-          endGame();
-        } else {
-          setCurrentRound(prev => prev + 1);
-          selectNewContent();
-        }
+        handleNextMessage();
       }, 3000);
     }
+  };
+
+  // Handle flag selection
+  const handleFlagToggle = (flagId: string) => {
+    if (messageSubmitted) return;
     
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
-  }, [gameStarted, timeLeft, showExplanation]);
+    setSelectedFlags(prev => {
+      if (prev.includes(flagId)) {
+        return prev.filter(id => id !== flagId);
+      } else {
+        return [...prev, flagId];
+      }
+    });
+  };
 
-  const renderContent = () => {
-    if (!currentContent) return null;
-
-    if (currentContent.type === "email") {
-      return (
-        <Card className="border shadow mb-4">
-          <CardContent className="p-4">
-            <div className="border-b pb-2 mb-3">
-              <div className="flex justify-between items-center">
-                <div>
-                  <div className="font-semibold">From: {currentContent.content.sender}</div>
-                  <div className="font-semibold">Subject: {currentContent.content.subject}</div>
-                </div>
-                <Mail className="h-5 w-5 text-slate-400" />
-              </div>
-            </div>
-            <div className="py-2">
-              <p className="mb-3">{currentContent.content.body}</p>
-              <div className="py-2 px-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded text-sm">
-                {currentContent.content.url}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      );
-    } else if (currentContent.type === "website") {
-      return (
-        <Card className="border shadow mb-4">
-          <CardContent className="p-4">
-            <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-t-lg flex items-center">
-              <div className="bg-slate-200 dark:bg-slate-700 rounded px-2 py-1 text-sm flex-grow font-mono">
-                {currentContent.content.url}
-              </div>
-            </div>
-            <div className="p-4 border border-t-0 rounded-b-lg">
-              <h3 className="text-xl font-semibold mb-2">{currentContent.content.title}</h3>
-              <p>{currentContent.content.description}</p>
-            </div>
-          </CardContent>
-        </Card>
-      );
+  // Submit verdict on the current message
+  const handleSubmitVerdict = (isPhishing: boolean) => {
+    if (messageSubmitted) return;
+    
+    const currentAttempt = phishingAttempts[currentMessage];
+    const isCorrect = currentAttempt.isPhishing === isPhishing;
+    
+    // Set verdict for UI
+    setVerdict(isPhishing ? 'phishing' : 'legitimate');
+    setMessageSubmitted(true);
+    
+    // Calculate score based on correct verdict and flags
+    const basePts = 10;
+    let flagBonus = 0;
+    let timeBonus = 0;
+    
+    // Calculate flag selection accuracy
+    if (isCorrect) {
+      // Calculate flag accuracy only if verdict was correct
+      const correctFlags = currentAttempt.redFlags.filter(flag => flag.isCorrect);
+      const incorrectFlags = currentAttempt.redFlags.filter(flag => !flag.isCorrect);
+      
+      // Count how many correct flags were selected
+      const correctFlagsSelected = selectedFlags.filter(flagId => 
+        correctFlags.some(flag => flag.id === flagId)
+      ).length;
+      
+      // Count incorrect flags selected
+      const incorrectFlagsSelected = selectedFlags.filter(flagId => 
+        incorrectFlags.some(flag => flag.id === flagId)
+      ).length;
+      
+      // Calculate flag bonus (max 5 points)
+      flagBonus = Math.min(5, correctFlagsSelected - incorrectFlagsSelected);
+      
+      // Calculate time bonus (faster = more points, max 5)
+      timeBonus = Math.min(5, Math.ceil(timeLeft / 10));
+      
+      // Update streak and multiplier
+      setCorrectStreak(prev => prev + 1);
+      if (correctStreak >= 2) {
+        // Increase multiplier after two correct answers in a row
+        setMultiplier(prev => Math.min(3, prev + 0.5));
+      }
+      
+      // Check perfect score
+      if (correctFlagsSelected !== correctFlags.length || incorrectFlagsSelected > 0) {
+        setPerfectScore(false);
+      }
+      
+    } else {
+      // Reset streak and multiplier for wrong answers
+      setCorrectStreak(0);
+      setMultiplier(1);
+      setPerfectScore(false);
     }
     
-    return null;
+    // Calculate total points with multiplier
+    const totalPoints = Math.round((isCorrect ? basePts + flagBonus + timeBonus : 0) * multiplier);
+    
+    // Add points to score
+    setScore(prevScore => prevScore + totalPoints);
+    
+    // Show appropriate toast
+    if (isCorrect) {
+      toast({
+        title: "Great job!",
+        description: `Correct identification! +${totalPoints} points (×${multiplier} multiplier)`,
+      });
+    } else {
+      toast({
+        title: "Oops!",
+        description: `That was ${currentAttempt.isPhishing ? 'a phishing attempt' : 'a legitimate message'}.`,
+        variant: "destructive"
+      });
+    }
+    
+    // Move to next message after delay
+    setTimeout(() => {
+      handleNextMessage();
+    }, 4000);
+  };
+
+  // Get hint about the current message
+  const handleGetHint = () => {
+    if (!hintAvailable || messageSubmitted) return;
+    
+    const currentAttempt = phishingAttempts[currentMessage];
+    const correctFlags = currentAttempt.redFlags.filter(flag => flag.isCorrect);
+    
+    if (correctFlags.length > 0) {
+      // Reveal one correct flag that hasn't been selected yet
+      const unselectedCorrectFlags = correctFlags.filter(
+        flag => !selectedFlags.includes(flag.id)
+      );
+      
+      if (unselectedCorrectFlags.length > 0) {
+        const hintFlag = unselectedCorrectFlags[0];
+        setSelectedFlags(prev => [...prev, hintFlag.id]);
+        
+        toast({
+          title: "Hint Used",
+          description: `Look for: ${hintFlag.description}`,
+        });
+        
+        // Disable hint after use
+        setHintAvailable(false);
+        // Using a hint means no perfect score
+        setPerfectScore(false);
+      } else {
+        toast({
+          title: "Hint Unavailable",
+          description: "You've already found all the important red flags!",
+        });
+      }
+    } else {
+      // No correct flags, so probably a legitimate message
+      toast({
+        title: "Hint Used",
+        description: "This message appears to be normal with no obvious red flags.",
+      });
+      
+      // Disable hint after use
+      setHintAvailable(false);
+    }
+  };
+
+  // Move to the next message
+  const handleNextMessage = () => {
+    const nextMessageIndex = currentMessage + 1;
+    
+    if (nextMessageIndex < phishingAttempts.length) {
+      // Move to next message
+      setCurrentMessage(nextMessageIndex);
+      setSelectedFlags([]);
+      setMessageSubmitted(false);
+      setVerdict(null);
+      setTimeLeft(45);
+      
+      // Reset hint availability occasionally
+      if (nextMessageIndex % 3 === 0) {
+        setHintAvailable(true);
+      }
+    } else {
+      // Game complete
+      finishGame();
+    }
+  };
+
+  // Complete the game
+  const finishGame = () => {
+    setGameComplete(true);
+    
+    // Final score calculation
+    let finalScore = score;
+    
+    // Perfect score bonus
+    if (perfectScore) {
+      const perfectBonus = 20;
+      finalScore += perfectBonus;
+      
+      toast({
+        title: "Perfect Score Bonus!",
+        description: `+${perfectBonus} points for perfect phishing detection!`,
+      });
+    }
+    
+    // Cap at 100
+    finalScore = Math.min(100, finalScore);
+    
+    // Complete the game
+    setTimeout(() => {
+      onComplete(finalScore);
+    }, 2000);
+  };
+  
+  // Get icon for message type
+  const getMessageTypeIcon = (type: 'email' | 'sms' | 'social') => {
+    switch(type) {
+      case 'email':
+        return <Mail className="h-4 w-4" />;
+      case 'sms':
+        return <MessageSquare className="h-4 w-4" />;
+      case 'social':
+        return <MessageSquare className="h-4 w-4" />;
+      default:
+        return <Mail className="h-4 w-4" />;
+    }
   };
 
   return (
-    <div className="flex flex-col space-y-6">
-      {!gameStarted && !gameComplete ? (
-        <motion.div 
-          className="text-center space-y-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h3 className="text-xl font-bold">Phishing Mastermind</h3>
-          <p className="text-slate-600 dark:text-slate-400 mb-4">
-            Test your ability to identify phishing attempts in emails and websites.
-            Quick decision-making is key to cybersecurity!
-          </p>
-          
-          <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg mb-4">
-            <h4 className="font-semibold mb-2">Game Rules:</h4>
-            <ul className="list-disc list-inside text-left text-sm space-y-1">
-              <li>You'll be shown emails and websites</li>
-              <li>Decide if they are legitimate or phishing attempts</li>
-              <li>You have 20 seconds to make each decision</li>
-              <li>Earn points for correct answers, with bonuses for speed</li>
-              <li>Build a streak of correct answers for bonus points</li>
-              <li>Learn from explanations after each round</li>
-            </ul>
-          </div>
-          
-          <Button 
-            onClick={startGame}
-            size="lg" 
-            className="bg-blue-500 hover:bg-blue-600 text-white"
-          >
-            Start Game
-          </Button>
-        </motion.div>
-      ) : gameComplete ? (
-        <motion.div 
-          className="text-center space-y-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h3 className="text-2xl font-bold">Game Complete!</h3>
-          <div className="py-6">
-            <span className="text-4xl font-bold text-primary">{score}</span>
-            <p className="text-slate-500 dark:text-slate-400">Final Score</p>
-          </div>
-          
-          <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg">
-            <h4 className="font-semibold mb-2">Security Tips:</h4>
-            <ul className="list-disc list-inside text-left text-sm space-y-1">
-              <li>Always check the sender's email domain carefully</li>
-              <li>Hover over links before clicking to see the actual URL</li>
-              <li>Be suspicious of urgent requests or threats</li>
-              <li>Look for spelling and grammar errors</li>
-              <li>When in doubt, contact the company directly through their official website</li>
-            </ul>
-          </div>
-          
-          <div className="pt-4">
-            <Button 
-              onClick={() => {
-                setGameComplete(false);
-              }} 
-              variant="outline" 
-              className="mr-2"
-            >
-              Close
-            </Button>
-            <Button 
-              onClick={startGame}
-            >
-              Play Again
-            </Button>
-          </div>
-        </motion.div>
-      ) : (
-        <motion.div 
-          className="space-y-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
+    <div className="space-y-4">
+      {!gameComplete ? (
+        <>
           <div className="flex justify-between items-center">
-            <div className="flex items-center">
-              <Badge 
-                variant="outline" 
-                className="mr-2 bg-slate-100 dark:bg-slate-800"
-              >
-                Round {currentRound}/{totalRounds}
+            <div>
+              <h3 className="text-lg font-medium">Hook or Hoax?</h3>
+              <p className="text-sm text-slate-500">Identify phishing attempts</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="bg-primary/10">
+                Score: {score}
               </Badge>
-              {streakCount > 0 && (
-                <Badge variant="secondary" className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
-                  {streakCount} streak
+              <Badge variant={timeLeft < 15 ? "destructive" : "outline"} className={timeLeft < 15 ? "" : "bg-primary/10"}>
+                <Clock className="h-3.5 w-3.5 mr-1" /> {timeLeft}s
+              </Badge>
+              {multiplier > 1 && (
+                <Badge variant="secondary">
+                  {multiplier}x Multiplier
                 </Badge>
               )}
             </div>
-            <div className="flex items-center">
-              <TimerIcon className="h-4 w-4 mr-1 text-amber-500" />
-              <span className={`font-mono ${timeLeft <= 5 ? 'text-red-500' : ''}`}>
-                {timeLeft}s
-              </span>
-            </div>
           </div>
           
-          <div>
-            <Progress 
-              value={(timeLeft / 20) * 100} 
-              className="h-2"
-              indicatorClassName={timeLeft <= 5 ? "bg-red-500" : ""}
-            />
-          </div>
+          <Progress 
+            value={(currentMessage / phishingAttempts.length) * 100} 
+            className="h-1.5" 
+          />
           
-          <div>
-            <div className="mb-4">
-              <h4 className="text-sm font-medium flex items-center mb-2">
-                {currentContent?.type === "email" ? (
-                  <Mail className="h-4 w-4 mr-1 text-blue-500" />
-                ) : (
-                  <ShieldCheck className="h-4 w-4 mr-1 text-green-500" />
-                )}
-                {currentContent?.type === "email" ? "Email Message" : "Website"}
-              </h4>
-            </div>
-            
-            {renderContent()}
-            
-            <AnimatePresence mode="wait">
-              {showExplanation ? (
-                <motion.div
-                  key="explanation"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className={`p-4 rounded-lg ${
-                    isCorrect
-                      ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
-                      : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200"
-                  }`}
-                >
-                  <div className="flex items-start">
-                    {isCorrect ? (
-                      <Check className="h-5 w-5 mr-2 flex-shrink-0" />
-                    ) : (
-                      <X className="h-5 w-5 mr-2 flex-shrink-0" />
-                    )}
-                    <div>
-                      <p className="font-medium mb-1">
-                        {isCorrect ? "Correct!" : "Incorrect"}
-                      </p>
-                      <p className="text-sm">{explanationText}</p>
-                    </div>
+          {currentMessage < phishingAttempts.length && (
+            <Card className={`border ${
+              messageSubmitted && verdict === 'phishing' ? 'border-red-500' : 
+              messageSubmitted && verdict === 'legitimate' ? 'border-green-500' :
+              'border-slate-200 dark:border-slate-800'
+            }`}>
+              <CardHeader className="pb-2 pt-4 px-4 flex-row justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-slate-100 dark:bg-slate-800">
+                    {getMessageTypeIcon(phishingAttempts[currentMessage].type)}
+                    <span className="ml-1 capitalize">{phishingAttempts[currentMessage].type}</span>
+                  </Badge>
+                  <div className="text-sm font-medium truncate">
+                    {phishingAttempts[currentMessage].sender}
                   </div>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="judgment"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex justify-center gap-4 mt-4"
-                >
-                  <Button
-                    onClick={() => judgeContent(false)}
-                    variant="outline"
-                    className="flex-1 border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
-                  >
-                    <Check className="mr-2 h-4 w-4" />
-                    Legitimate
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {phishingAttempts[currentMessage].timeReceived}
+                </div>
+              </CardHeader>
+              <CardContent className="px-4 py-3">
+                <div className="font-medium text-sm mb-2">
+                  {phishingAttempts[currentMessage].subject}
+                </div>
+                <div className="text-sm whitespace-pre-wrap">
+                  {phishingAttempts[currentMessage].content}
+                </div>
+                
+                <div className="mt-6 border-t pt-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="font-medium text-sm">Possible Red Flags:</h4>
+                    {hintAvailable && !messageSubmitted && (
+                      <Button variant="ghost" size="sm" onClick={handleGetHint} className="h-7 text-xs">
+                        <BadgeInfo className="h-3.5 w-3.5 mr-1.5" /> Get Hint
+                      </Button>
+                    )}
+                  </div>
+                  <div className="space-y-3">
+                    {phishingAttempts[currentMessage].redFlags.map(flag => (
+                      <div key={flag.id} className="flex items-start space-x-2">
+                        <Checkbox 
+                          id={flag.id}
+                          checked={selectedFlags.includes(flag.id)}
+                          onCheckedChange={() => handleFlagToggle(flag.id)}
+                          disabled={messageSubmitted}
+                          className={
+                            messageSubmitted && flag.isCorrect ? "border-green-500 bg-green-500" :
+                            messageSubmitted && selectedFlags.includes(flag.id) && !flag.isCorrect ? "border-red-500" :
+                            ""
+                          }
+                        />
+                        <label 
+                          htmlFor={flag.id}
+                          className={`text-sm leading-relaxed cursor-pointer ${
+                            messageSubmitted && flag.isCorrect ? "text-green-600 dark:text-green-400 font-medium" :
+                            messageSubmitted && selectedFlags.includes(flag.id) && !flag.isCorrect ? "text-red-600 dark:text-red-400" :
+                            ""
+                          }`}
+                        >
+                          {flag.description}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {messageSubmitted && (
+                  <div className={`mt-4 p-3 rounded-md ${
+                    phishingAttempts[currentMessage].isPhishing ? 
+                      "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800" :
+                      "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      {phishingAttempts[currentMessage].isPhishing ? 
+                        <AlertTriangle className="h-5 w-5 text-red-500" /> :
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                      }
+                      <div className="font-medium">
+                        This is {phishingAttempts[currentMessage].isPhishing ? "a phishing attempt!" : "a legitimate message."}
+                      </div>
+                    </div>
+                    <p className="text-sm mt-1">
+                      {phishingAttempts[currentMessage].isPhishing ? 
+                        "Be careful with messages that create urgency or ask for your information." :
+                        "This message shows the expected patterns of a legitimate communication."
+                      }
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+              <CardFooter className="pt-2 pb-3 px-4 justify-between">
+                <div className="text-sm">
+                  Message {currentMessage + 1} of {phishingAttempts.length}
+                </div>
+                {!messageSubmitted ? (
+                  <div className="flex gap-3">
+                    <Button 
+                      variant="destructive" 
+                      onClick={() => handleSubmitVerdict(true)}
+                      className="flex items-center"
+                    >
+                      <ShieldAlert className="h-4 w-4 mr-1.5" /> Mark as Phishing
+                    </Button>
+                    <Button 
+                      variant="default" 
+                      onClick={() => handleSubmitVerdict(false)}
+                      className="flex items-center"
+                    >
+                      <ShieldCheck className="h-4 w-4 mr-1.5" /> Mark as Legitimate
+                    </Button>
+                  </div>
+                ) : (
+                  <Button onClick={handleNextMessage}>
+                    {currentMessage < phishingAttempts.length - 1 ? "Next Message" : "Complete Challenge"}
+                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
-                  <Button
-                    onClick={() => judgeContent(true)}
-                    variant="outline"
-                    className="flex-1 border-red-500 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                  >
-                    <AlertTriangle className="mr-2 h-4 w-4" />
-                    Phishing
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                )}
+              </CardFooter>
+            </Card>
+          )}
+        </>
+      ) : (
+        <div className="text-center py-8">
+          <CheckCircle className="h-16 w-16 mx-auto mb-4 text-green-500" />
+          <h3 className="text-2xl font-bold mb-2">Challenge Complete!</h3>
+          <p className="text-lg mb-6">
+            Final Score: <span className="text-primary font-bold">{score}</span>/100
+          </p>
+          
+          {perfectScore && (
+            <div className="mb-6 max-w-md mx-auto p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg border border-amber-300 dark:border-amber-700">
+              <p className="font-medium text-amber-800 dark:text-amber-300">Achievement Unlocked!</p>
+              <p className="text-sm">PhishShield 3000: Perfect detection of all phishing attempts!</p>
+            </div>
+          )}
+          
+          <div className="max-w-md mx-auto text-left p-4 bg-slate-50 dark:bg-slate-800 rounded-lg mb-6">
+            <h4 className="font-medium mb-2 flex items-center">
+              <Shield className="h-4 w-4 mr-2 text-primary" />
+              Security Assessment
+            </h4>
+            
+            {score >= 80 ? (
+              <p className="text-sm text-slate-700 dark:text-slate-300">
+                Outstanding job! You have excellent phishing detection skills and a keen eye for security red flags.
+              </p>
+            ) : score >= 60 ? (
+              <p className="text-sm text-slate-700 dark:text-slate-300">
+                Good work! You identified most phishing attempts, but there's still room to sharpen your detection skills.
+              </p>
+            ) : (
+              <p className="text-sm text-slate-700 dark:text-slate-300">
+                You've learned the basics of phishing detection. With more practice, you'll be able to spot sophisticated attacks.
+              </p>
+            )}
           </div>
           
-          <div className="pt-2">
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Current Score: <span className="font-semibold text-primary">{score}</span>
-            </p>
+          <div className="flex flex-col sm:flex-row justify-center gap-3">
+            <Button variant="outline" onClick={() => window.location.reload()}>
+              <RefreshCw className="h-4 w-4 mr-2" /> Try Again
+            </Button>
+            <Button onClick={() => onComplete(score)}>
+              Continue <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
           </div>
-        </motion.div>
+        </div>
       )}
     </div>
   );
