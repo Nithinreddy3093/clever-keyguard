@@ -75,3 +75,6 @@ export const checkForAchievements = (password: string, analysis: {
   
   return achievements;
 };
+
+// Alias for backward compatibility
+export const checkPasswordAchievements = checkForAchievements;

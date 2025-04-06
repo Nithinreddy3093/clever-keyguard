@@ -98,3 +98,19 @@ export const estimateCrackTime = (entropy: number): Record<string, CrackTimeEsti
     'SHA-256 (Cluster)': sha256Cluster
   };
 };
+
+// Helper functions for crack time simulation based on character sets and length
+export const crackTimesInSeconds = {
+  // Fast offline hash cracking (e.g., SHA-256 on GPU)
+  fastOfflineHash: (length: number, charSetCount: number) => {
+    const combinations = Math.pow(Math.min(charSetCount * 26, 95), length);
+    return combinations / hashPerformance.sha256.gpu;
+  },
+  
+  // Online throttled attack (e.g., website login with rate limiting)
+  onlineThrottled: (length: number, charSetCount: number) => {
+    const combinations = Math.pow(Math.min(charSetCount * 26, 95), length);
+    // Assuming 100 attempts per hour due to rate limiting
+    return combinations / (100 / 3600);
+  }
+};

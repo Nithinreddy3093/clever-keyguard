@@ -10,7 +10,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { 
   Copy, Check, ArrowLeft, Shield, RefreshCw, Wand2, Download, Save, 
-  Palette, Settings, Share2, Copy as CopyIcon, Star
+  Palette, Settings, Share2, Copy as CopyIcon, Star, X
 } from "lucide-react";
 import { 
   Tabs, TabsContent, TabsList, TabsTrigger 

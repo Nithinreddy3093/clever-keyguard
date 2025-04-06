@@ -3,10 +3,10 @@ import { detectPatterns, calculateAttackResistance, calculateHackabilityScore } 
 import { calculateEntropy } from "./entropyCalculator";
 import { calculateScore } from "./scoreCalculator";
 import { generateSuggestions } from "./suggestionGenerator";
-import { checkPasswordAchievements } from "./achievementChecker";
+import { checkForAchievements } from "./achievementChecker";
 import { commonPasswords } from "./commonPasswords";
 import { PasswordAnalysis } from "./types";
-import { crackTimesInSeconds, formatCrackTime } from "../crackTimeSimulator";
+import { estimateCrackTime, formatCrackTime } from "../crackTimeSimulator";
 
 /**
  * Analyzes a password and returns detailed security metrics
@@ -36,32 +36,33 @@ export const analyzePassword = (password: string): PasswordAnalysis => {
   const score = calculateScore(password, entropy, hasCommonPattern, isCommon);
   
   // Calculate estimated time to crack
-  const offlineFastHashCrackTime = crackTimesInSeconds.fastOfflineHash(length, 
-    [hasLower, hasUpper, hasDigit, hasSpecial, hasUnicode].filter(Boolean).length);
-  const onlineCrackTime = crackTimesInSeconds.onlineThrottled(length, 
-    [hasLower, hasUpper, hasDigit, hasSpecial, hasUnicode].filter(Boolean).length);
+  const crackTimeEstimates = estimateCrackTime(entropy);
+  const offlineFastHashCrackTime = crackTimeEstimates["SHA-256 (GPU)"].timeInSeconds;
+  const onlineCrackTime = crackTimeEstimates["bcrypt (CPU)"].timeInSeconds;
   
   // Calculate attack resistance
-  const attackResistance = calculateAttackResistance(password, detectedPatterns, entropy);
+  const attackResistance = calculateAttackResistance(password);
   
   // Calculate hackability score
-  const hackabilityScore = calculateHackabilityScore(password, detectedPatterns, entropy, offlineFastHashCrackTime);
+  const hackabilityScore = calculateHackabilityScore(password);
   
   // Generate improvement suggestions
-  const suggestions = generateSuggestions(
-    password, 
-    score, 
-    detectedPatterns, 
-    isCommon, 
-    hasUpper, 
-    hasLower, 
-    hasDigit, 
-    hasSpecial,
-    length
-  );
+  const suggestions = generateSuggestions(password, score);
   
   // Check for unlocked achievements
-  const achievements = checkPasswordAchievements(password, score, entropy, length, hackabilityScore);
+  const achievements = checkForAchievements(password, {
+    length,
+    hasUpper,
+    hasLower,
+    hasDigit,
+    hasSpecial,
+    entropy,
+    score,
+    isCommon,
+    hasCommonPattern,
+    mlPatterns: detectedPatterns,
+    crackTimeEstimates
+  });
   
   // Format crack time for display
   const timeToCrack = {
@@ -71,9 +72,6 @@ export const analyzePassword = (password: string): PasswordAnalysis => {
   
   // Return comprehensive analysis
   return {
-    password,
-    score,
-    entropy,
     length,
     hasUpper,
     hasLower,
@@ -83,7 +81,12 @@ export const analyzePassword = (password: string): PasswordAnalysis => {
     hasCommonPattern,
     isCommon,
     patterns: detectedPatterns,
+    commonPatterns: detectedPatterns.map(p => p.type),
+    mlPatterns: detectedPatterns,
+    entropy,
+    score,
     timeToCrack,
+    crackTimeEstimates,
     attackResistance,
     hackabilityScore,
     suggestions,

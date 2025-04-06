@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,10 +14,11 @@ interface BreachSimulatorGameProps {
 const commonPasswordSet = new Set(commonPasswords);
 
 const BreachSimulatorGame = ({ onComplete }: BreachSimulatorGameProps) => {
-  const [stage, setStage] = useState(0);
+  const [currentRound, setCurrentRound] = useState(1);
+  const [totalRounds] = useState(5);
   const [score, setScore] = useState(0);
-  const [currentOptions, setCurrentOptions] = useState<string[]>([]);
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [passwords, setPasswords] = useState<string[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [feedback, setFeedback] = useState("");
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [gameComplete, setGameComplete] = useState(false);
@@ -30,8 +30,10 @@ const BreachSimulatorGame = ({ onComplete }: BreachSimulatorGameProps) => {
       description: "Which of these passwords is most likely to be found in a data breach?",
       options: () => {
         // Generate one common password and two secure ones
-        const commonIndex = Math.floor(Math.random() * commonPasswords.length);
-        const commonPwd = commonPasswords[commonIndex];
+        // Convert the Set to Array for accessing by index
+        const commonPasswordArray = Array.from(commonPasswordSet);
+        const commonIndex = Math.floor(Math.random() * commonPasswordArray.length);
+        const commonPwd = commonPasswordArray[commonIndex];
         
         // Create secure passwords
         const securePasswords = [
