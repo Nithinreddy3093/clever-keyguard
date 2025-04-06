@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { analyzePassword } from "@/lib/passwordAnalyzer";
+import { analyzePassword } from "@/lib/passwordAnalyzer"; // Keep using the compatibility export
 import { useToast } from "@/hooks/use-toast";
 import useGameProgress from "@/hooks/useGameProgress";
 
