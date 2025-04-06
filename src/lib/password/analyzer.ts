@@ -33,7 +33,21 @@ export const analyzePassword = (password: string): PasswordAnalysis => {
   
   // Calculate entropy and strength score
   const entropy = calculateEntropy(password);
-  const score = calculateScore(password, entropy, hasCommonPattern, isCommon);
+  
+  // Prepare analysis data for score calculation
+  const analysisForScore = {
+    length,
+    hasUpper,
+    hasLower,
+    hasDigit,
+    hasSpecial,
+    isCommon,
+    hasCommonPattern,
+    mlPatterns: detectedPatterns,
+    entropy
+  };
+  
+  const score = calculateScore(analysisForScore);
   
   // Calculate estimated time to crack
   const crackTimeEstimates = estimateCrackTime(entropy);
@@ -47,10 +61,23 @@ export const analyzePassword = (password: string): PasswordAnalysis => {
   const hackabilityScore = calculateHackabilityScore(password);
   
   // Generate improvement suggestions
-  const suggestions = generateSuggestions(password, score);
+  const analysisForSuggestions = {
+    length,
+    hasUpper,
+    hasLower,
+    hasDigit,
+    hasSpecial,
+    isCommon,
+    hasCommonPattern,
+    commonPatterns: detectedPatterns.map(p => p.type),
+    mlPatterns: detectedPatterns,
+    score
+  };
+  
+  const suggestions = generateSuggestions(password, analysisForSuggestions);
   
   // Prepare analysis data for achievements check
-  const analysisData = {
+  const achievements = checkForAchievements(password, {
     length,
     hasUpper,
     hasLower,
@@ -62,10 +89,7 @@ export const analyzePassword = (password: string): PasswordAnalysis => {
     hasCommonPattern,
     mlPatterns: detectedPatterns,
     crackTimeEstimates
-  };
-  
-  // Check for unlocked achievements
-  const achievements = checkForAchievements(password, analysisData);
+  });
   
   // Format crack time for display
   const timeToCrack = {
@@ -83,7 +107,6 @@ export const analyzePassword = (password: string): PasswordAnalysis => {
     hasUnicode,
     hasCommonPattern,
     isCommon,
-    patterns: detectedPatterns,
     commonPatterns: detectedPatterns.map(p => p.type),
     mlPatterns: detectedPatterns,
     entropy,
