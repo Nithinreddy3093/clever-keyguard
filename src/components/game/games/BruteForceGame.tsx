@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Terminal, Clock, Lock, Shield, CheckCircle, X, ZapOff, AlertTriangle, ArrowRight, Cpu } from "lucide-react";
+import { Terminal, Clock, Lock, Shield, CheckCircle, X, ZapOff, AlertTriangle, ArrowRight, Cpu, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface BruteForceGameProps {
@@ -35,7 +34,6 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
   const [bruteForceCooldown, setBruteForceCooldown] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Password pools by difficulty
   const passwordPools = {
     easy: [
       "admin", "login", "secure", "server", "access",
@@ -51,12 +49,10 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
     ]
   };
 
-  // Initialize the game with a random password
   useEffect(() => {
     resetGame(difficulty);
   }, [difficulty]);
 
-  // Timer effect
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
     
@@ -66,7 +62,6 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
       }, 1000);
     }
     
-    // Brute force cooldown timer
     if (bruteForceCooldown > 0 && !gameComplete) {
       const bruteForceCooldownInterval = setInterval(() => {
         setBruteForceCooldown(prev => Math.max(0, prev - 1));
@@ -83,9 +78,7 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
     };
   }, [gameComplete, bruteForceCooldown]);
 
-  // Reset game with selected difficulty
   const resetGame = (gameDifficulty: "easy" | "medium" | "hard") => {
-    // Select random password from pool
     const pool = passwordPools[gameDifficulty];
     const randomPassword = pool[Math.floor(Math.random() * pool.length)];
     
@@ -100,7 +93,6 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
     setBruteForceModeActive(false);
     setBruteForceCooldown(0);
     
-    // Set firewall health and remaining guesses based on difficulty
     if (gameDifficulty === "easy") {
       setFirewallHealth(100);
       setRemainingGuesses(10);
@@ -112,80 +104,63 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
       setRemainingGuesses(6);
     }
     
-    // Focus input
     if (inputRef.current) {
       inputRef.current.focus();
     }
   };
 
-  // Handle guess submission
   const handleGuess = () => {
     if (!guess || gameComplete) return;
     
-    // Add to attempts list
     const newAttempts = [...attempts, guess];
     setAttempts(newAttempts);
     
-    // Check result with Wordle-like feedback
     const result = checkGuess(guess);
     const newResults = [...attemptResults, result];
     setAttemptResults(newResults);
     
-    // Reduce firewall health (more for incorrect guesses)
     const correctChars = result.filter(r => r.status === "correct").length;
     const percentCorrect = (correctChars / targetPassword.length) * 100;
     
-    // Health reduction based on how incorrect the guess is
     const healthReduction = Math.max(5, 20 - Math.floor(percentCorrect / 5));
     setFirewallHealth(prevHealth => Math.max(0, prevHealth - healthReduction));
     
-    // Decrement remaining guesses
     setRemainingGuesses(prev => prev - 1);
     
-    // Check for victory
     if (guess.toLowerCase() === targetPassword.toLowerCase()) {
       handleVictory();
-    }
-    // Check for game over conditions
-    else if (remainingGuesses <= 1 || firewallHealth - healthReduction <= 0) {
+    } else if (remainingGuesses <= 1 || firewallHealth - healthReduction <= 0) {
       handleGameOver();
     }
     
-    // Reset guess field
     setGuess("");
   };
 
-  // Check guess against target password
   const checkGuess = (currentGuess: string): PasswordCharacterState[] => {
     const result: PasswordCharacterState[] = [];
     const target = targetPassword.toLowerCase();
     const guessLower = currentGuess.toLowerCase();
     
-    // First pass: find exact matches
     const targetChars = target.split('');
     const usedTargetIndices: boolean[] = Array(target.length).fill(false);
     
-    // First mark correct positions
     for (let i = 0; i < guessLower.length; i++) {
       if (i < target.length && guessLower[i] === target[i]) {
         result.push({ char: currentGuess[i], status: "correct" });
         usedTargetIndices[i] = true;
       } else if (i >= target.length) {
-        // Extra characters
         result.push({ char: currentGuess[i], status: "incorrect" });
       } else {
         result.push({ char: currentGuess[i], status: "unknown" });
       }
     }
     
-    // Fill in for shorter guesses
     if (currentGuess.length < target.length) {
       for (let i = currentGuess.length; i < target.length; i++) {
         result.push({ char: " ", status: "unknown" });
       }
     }
     
-    // Second pass: find wrong positions
     for (let i = 0; i < result.length; i++) {
       if (result[i].status === "unknown") {
         const char = guessLower[i];
@@ -209,17 +184,9 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
     return result;
   };
 
-  // Handle victory state
   const handleVictory = () => {
     setVictory(true);
     setGameComplete(true);
-    
-    // Calculate score based on:
-    // - Remaining health
-    // - Time taken
-    // - Difficulty
-    // - Number of attempts
-    // - Whether hint was used
     
     const difficultyMultiplier = difficulty === "easy" ? 1 : difficulty === "medium" ? 1.5 : 2;
     const healthBonus = Math.round(firewallHealth / 2);
@@ -232,7 +199,6 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
     
     setScore(finalScore);
     
-    // Special achievement for very quick wins
     if (attempts.length <= 3) {
       toast({
         title: "Hacker Extraordinaire!",
@@ -247,13 +213,11 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
       duration: 2000,
     });
     
-    // Notify completion after a short delay
     setTimeout(() => {
       onComplete(finalScore);
     }, 2000);
   };
 
-  // Handle game over state
   const handleGameOver = () => {
     setVictory(false);
     setGameComplete(true);
@@ -261,7 +225,6 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
     const difficultyValue = difficulty === "easy" ? 10 : difficulty === "medium" ? 20 : 30;
     const attemptsValue = Math.min(20, attempts.length * 3);
     
-    // Even on loss, award some points for effort
     const consolationScore = Math.min(40, difficultyValue + attemptsValue);
     setScore(consolationScore);
     
@@ -272,17 +235,14 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
       duration: 2000,
     });
     
-    // Notify completion after a short delay
     setTimeout(() => {
       onComplete(consolationScore);
     }, 2000);
   };
 
-  // Get hint - reveals one character
   const getHint = () => {
     if (hintUsed || gameComplete) return;
     
-    // Find a character position to reveal
     const existingCorrectPositions = new Set<number>();
     attemptResults.forEach(result => {
       result.forEach((char, idx) => {
@@ -292,7 +252,6 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
       });
     });
     
-    // Find positions not yet guessed correctly
     const possiblePositions = [];
     for (let i = 0; i < targetPassword.length; i++) {
       if (!existingCorrectPositions.has(i)) {
@@ -300,7 +259,6 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
       }
     }
     
-    // If all positions have been guessed correctly, can't give hint
     if (possiblePositions.length === 0) {
       toast({
         title: "No Hint Available",
@@ -310,7 +268,6 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
       return;
     }
     
-    // Choose a random position to reveal
     const revealPosition = possiblePositions[Math.floor(Math.random() * possiblePositions.length)];
     
     toast({
@@ -319,23 +276,18 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
       duration: 3000,
     });
     
-    // Mark hint as used
     setHintUsed(true);
     
-    // Health penalty for using hint
     setFirewallHealth(prevHealth => Math.max(0, prevHealth - 15));
   };
 
-  // Activate brute force mode
   const activateBruteForce = () => {
     if (bruteForceModeActive || bruteForceCooldown > 0 || gameComplete) return;
     
     setBruteForceModeActive(true);
     
-    // For gameplay purposes, brute force gives a likely character
     const knownPositions = new Map<number, string>();
     
-    // Collect known correct characters
     attemptResults.forEach(result => {
       result.forEach((char, idx) => {
         if (char.status === "correct") {
@@ -344,7 +296,6 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
       });
     });
     
-    // Choose a position we don't know yet
     const unknownPositions = [];
     for (let i = 0; i < targetPassword.length; i++) {
       if (!knownPositions.has(i)) {
@@ -352,7 +303,6 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
       }
     }
     
-    // If we know all positions, brute force is not needed
     if (unknownPositions.length === 0) {
       toast({
         title: "Brute Force Failed",
@@ -364,7 +314,6 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
       return;
     }
     
-    // Show "brute forcing" animation for a few seconds
     let progress = 0;
     const totalSteps = 5;
     const interval = setInterval(() => {
@@ -379,17 +328,13 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
       } else {
         clearInterval(interval);
         
-        // Pick a random unknown position
         const targetPos = unknownPositions[Math.floor(Math.random() * unknownPositions.length)];
         
-        // Return potential characters for this position (include correct one)
         const correctChar = targetPassword[targetPos].toLowerCase();
         
-        // Create a set of potential characters with the correct one included
         const charPool = "abcdefghijklmnopqrstuvwxyz0123456789!@#$%";
         let potentialChars = new Set([correctChar]);
         
-        // Add 2-4 random characters
         const numExtra = Math.floor(Math.random() * 3) + 2;
         for (let i = 0; i < numExtra; i++) {
           const randomChar = charPool[Math.floor(Math.random() * charPool.length)];
@@ -402,12 +347,10 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
           duration: 3000,
         });
         
-        // Health penalty
         setFirewallHealth(prevHealth => Math.max(0, prevHealth - 25));
         
-        // Set cooldown
         setBruteForceModeActive(false);
-        setBruteForceCooldown(15); // 15 second cooldown
+        setBruteForceCooldown(15);
       }
     }, 1000);
   };
@@ -457,7 +400,6 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
           
           <div className="space-y-4">
             <div className="flex flex-col gap-4 mb-6">
-              {/* Display previous attempts with Wordle-style feedback */}
               {attemptResults.map((result, index) => (
                 <div key={index} className="flex justify-center gap-1">
                   {result.map((charState, charIndex) => (
@@ -478,13 +420,12 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
               ))}
             </div>
             
-            {/* Current guess input */}
             <div className="flex gap-2">
               <Input
                 ref={inputRef}
                 type="text"
                 value={guess}
-                onChange={(e) => setGuess(e.target.value.slice(0, targetPassword.length + 2))} // Allow slightly longer than target
+                onChange={(e) => setGuess(e.target.value.slice(0, targetPassword.length + 2))}
                 onKeyDown={(e) => e.key === "Enter" && handleGuess()}
                 placeholder="Enter password guess..."
                 className="font-mono"
@@ -493,7 +434,6 @@ const BruteForceGame = ({ onComplete }: BruteForceGameProps) => {
               <Button onClick={handleGuess}>Try</Button>
             </div>
             
-            {/* Legend */}
             <div className="flex justify-center gap-6 text-xs text-muted-foreground my-4">
               <div className="flex items-center">
                 <div className="w-4 h-4 bg-green-500 rounded mr-1.5"></div>

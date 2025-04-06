@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -6,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge";
 import { 
   AlertTriangle, CheckCircle, Clock, Mail, RefreshCw, X,
-  ArrowRight, MessageSquare, ShieldCheck, BadgeInfo, ShieldAlert
+  ArrowRight, MessageSquare, ShieldCheck, BadgeInfo, ShieldAlert, Shield
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -46,7 +45,6 @@ const PhishingGame = ({ onComplete }: PhishingGameProps) => {
   const [hintAvailable, setHintAvailable] = useState<boolean>(true);
   const [perfectScore, setPerfectScore] = useState<boolean>(true);
   
-  // Sample phishing attempts
   const phishingAttempts: PhishingAttempt[] = [
     {
       id: "email-1",
@@ -266,7 +264,6 @@ Apple Customer Support`,
     }
   ];
 
-  // Initialize timer
   useEffect(() => {
     if (!gameComplete && !messageSubmitted) {
       const timer = setInterval(() => {
@@ -284,7 +281,6 @@ Apple Customer Support`,
     }
   }, [gameComplete, messageSubmitted]);
 
-  // Handle timeout
   const handleTimeOut = () => {
     if (!messageSubmitted) {
       toast({
@@ -293,25 +289,20 @@ Apple Customer Support`,
         variant: "destructive"
       });
       
-      // Mark as submitted and show explanation
       setMessageSubmitted(true);
       setVerdict(null);
       
-      // Reset streak and multiplier
       setCorrectStreak(0);
       setMultiplier(1);
       
-      // No perfect score if timeout occurred
       setPerfectScore(false);
       
-      // Move to next message after showing explanation
       setTimeout(() => {
         handleNextMessage();
       }, 3000);
     }
   };
 
-  // Handle flag selection
   const handleFlagToggle = (flagId: string) => {
     if (messageSubmitted) return;
     
@@ -324,70 +315,53 @@ Apple Customer Support`,
     });
   };
 
-  // Submit verdict on the current message
   const handleSubmitVerdict = (isPhishing: boolean) => {
     if (messageSubmitted) return;
     
     const currentAttempt = phishingAttempts[currentMessage];
     const isCorrect = currentAttempt.isPhishing === isPhishing;
     
-    // Set verdict for UI
     setVerdict(isPhishing ? 'phishing' : 'legitimate');
     setMessageSubmitted(true);
     
-    // Calculate score based on correct verdict and flags
     const basePts = 10;
     let flagBonus = 0;
     let timeBonus = 0;
     
-    // Calculate flag selection accuracy
     if (isCorrect) {
-      // Calculate flag accuracy only if verdict was correct
       const correctFlags = currentAttempt.redFlags.filter(flag => flag.isCorrect);
       const incorrectFlags = currentAttempt.redFlags.filter(flag => !flag.isCorrect);
       
-      // Count how many correct flags were selected
       const correctFlagsSelected = selectedFlags.filter(flagId => 
         correctFlags.some(flag => flag.id === flagId)
       ).length;
       
-      // Count incorrect flags selected
       const incorrectFlagsSelected = selectedFlags.filter(flagId => 
         incorrectFlags.some(flag => flag.id === flagId)
       ).length;
       
-      // Calculate flag bonus (max 5 points)
       flagBonus = Math.min(5, correctFlagsSelected - incorrectFlagsSelected);
       
-      // Calculate time bonus (faster = more points, max 5)
       timeBonus = Math.min(5, Math.ceil(timeLeft / 10));
       
-      // Update streak and multiplier
       setCorrectStreak(prev => prev + 1);
       if (correctStreak >= 2) {
-        // Increase multiplier after two correct answers in a row
         setMultiplier(prev => Math.min(3, prev + 0.5));
       }
       
-      // Check perfect score
       if (correctFlagsSelected !== correctFlags.length || incorrectFlagsSelected > 0) {
         setPerfectScore(false);
       }
-      
     } else {
-      // Reset streak and multiplier for wrong answers
       setCorrectStreak(0);
       setMultiplier(1);
       setPerfectScore(false);
     }
     
-    // Calculate total points with multiplier
     const totalPoints = Math.round((isCorrect ? basePts + flagBonus + timeBonus : 0) * multiplier);
     
-    // Add points to score
     setScore(prevScore => prevScore + totalPoints);
     
-    // Show appropriate toast
     if (isCorrect) {
       toast({
         title: "Great job!",
@@ -401,13 +375,11 @@ Apple Customer Support`,
       });
     }
     
-    // Move to next message after delay
     setTimeout(() => {
       handleNextMessage();
     }, 4000);
   };
 
-  // Get hint about the current message
   const handleGetHint = () => {
     if (!hintAvailable || messageSubmitted) return;
     
@@ -415,7 +387,6 @@ Apple Customer Support`,
     const correctFlags = currentAttempt.redFlags.filter(flag => flag.isCorrect);
     
     if (correctFlags.length > 0) {
-      // Reveal one correct flag that hasn't been selected yet
       const unselectedCorrectFlags = correctFlags.filter(
         flag => !selectedFlags.includes(flag.id)
       );
@@ -429,9 +400,7 @@ Apple Customer Support`,
           description: `Look for: ${hintFlag.description}`,
         });
         
-        // Disable hint after use
         setHintAvailable(false);
-        // Using a hint means no perfect score
         setPerfectScore(false);
       } else {
         toast({
@@ -440,47 +409,38 @@ Apple Customer Support`,
         });
       }
     } else {
-      // No correct flags, so probably a legitimate message
       toast({
         title: "Hint Used",
         description: "This message appears to be normal with no obvious red flags.",
       });
       
-      // Disable hint after use
       setHintAvailable(false);
     }
   };
 
-  // Move to the next message
   const handleNextMessage = () => {
     const nextMessageIndex = currentMessage + 1;
     
     if (nextMessageIndex < phishingAttempts.length) {
-      // Move to next message
       setCurrentMessage(nextMessageIndex);
       setSelectedFlags([]);
       setMessageSubmitted(false);
       setVerdict(null);
       setTimeLeft(45);
       
-      // Reset hint availability occasionally
       if (nextMessageIndex % 3 === 0) {
         setHintAvailable(true);
       }
     } else {
-      // Game complete
       finishGame();
     }
   };
 
-  // Complete the game
   const finishGame = () => {
     setGameComplete(true);
     
-    // Final score calculation
     let finalScore = score;
     
-    // Perfect score bonus
     if (perfectScore) {
       const perfectBonus = 20;
       finalScore += perfectBonus;
@@ -491,16 +451,13 @@ Apple Customer Support`,
       });
     }
     
-    // Cap at 100
     finalScore = Math.min(100, finalScore);
     
-    // Complete the game
     setTimeout(() => {
       onComplete(finalScore);
     }, 2000);
   };
-  
-  // Get icon for message type
+
   const getMessageTypeIcon = (type: 'email' | 'sms' | 'social') => {
     switch(type) {
       case 'email':
