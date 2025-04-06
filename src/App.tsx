@@ -16,6 +16,7 @@ import PasswordChat from "./pages/PasswordChat";
 import ThemePasswordGenerator from "./pages/ThemePasswordGenerator";
 import PasswordRankings from "./pages/PasswordRankings";
 import PasswordGame from "./pages/PasswordGame";
+import PasswordArcade from "./pages/PasswordArcade";
 import ServicePasswords from "./pages/ServicePasswords";
 import NotFound from "./pages/NotFound";
 
@@ -42,6 +43,7 @@ const App = () => (
                 <Route path="/theme-passwords" element={<ThemePasswordGenerator />} />
                 <Route path="/rankings" element={<PasswordRankings />} />
                 <Route path="/password-game" element={<PasswordGame />} />
+                <Route path="/password-arcade" element={<PasswordArcade />} />
                 <Route path="/service-passwords" element={<ServicePasswords />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />

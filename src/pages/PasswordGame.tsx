@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import useGameProgress from "@/hooks/useGameProgress";
 import GameTabs from "@/components/game/GameTabs";
 import GameDialogs from "@/components/game/GameDialogs";
@@ -10,10 +10,8 @@ import { useDailyCheckin } from "@/hooks/game/useDailyCheckin";
 import { useQuestCompletion } from "@/hooks/game/useQuestCompletion";
 import { useProgressSaving } from "@/hooks/game/useProgressSaving";
 import { useAchievementViewer } from "@/hooks/game/useAchievementViewer";
-import PasswordArcadeIntro from "@/components/game/PasswordArcadeIntro";
 
 const PasswordGame = () => {
-  const [showIntro, setShowIntro] = useState(true);
   const { password, analysis, handlePasswordChange } = usePasswordAnalysis();
   const { username, handleUsernameChange } = useUsernameManagement();
   const { showDailyCheckin, setShowDailyCheckin, handleCheckIn } = useDailyCheckin();
@@ -43,33 +41,6 @@ const PasswordGame = () => {
   const handleSaveProgress = () => {
     saveToSupabase(username, password, analysis);
   };
-
-  const handleEnterArcade = () => {
-    setShowIntro(false);
-  };
-
-  // Check local storage to see if they've seen the intro before
-  useEffect(() => {
-    const hasSeenIntro = localStorage.getItem('passwordArcadeIntroSeen');
-    if (hasSeenIntro === 'true') {
-      setShowIntro(false);
-    }
-  }, []);
-
-  // Save that they've seen the intro
-  useEffect(() => {
-    if (!showIntro) {
-      localStorage.setItem('passwordArcadeIntroSeen', 'true');
-    }
-  }, [showIntro]);
-
-  if (showIntro) {
-    return (
-      <PasswordGameLayout>
-        <PasswordArcadeIntro onEnter={handleEnterArcade} playerLevel={playerLevel} />
-      </PasswordGameLayout>
-    );
-  }
 
   return (
     <PasswordGameLayout>
