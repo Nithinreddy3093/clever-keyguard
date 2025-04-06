@@ -43,7 +43,7 @@ export interface PasswordAnalysis {
     sources?: string[];
     lastBreached?: string;
   };
-  aiEnhanced?: {
+  aiEnhanced: {
     originalPassword: string;
     enhancedPassword: string;
     improvements: string[];

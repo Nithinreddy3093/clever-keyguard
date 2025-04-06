@@ -7,6 +7,7 @@ import { checkForAchievements } from "./achievementChecker";
 import { commonPasswords } from "./commonPasswords";
 import { PasswordAnalysis } from "./types";
 import { estimateCrackTime, formatCrackTime } from "../crackTimeSimulator";
+import { enhancePassword } from "../aiPasswordEnhancer";
 
 /**
  * Analyzes a password and returns detailed security metrics
@@ -96,6 +97,9 @@ export const analyzePassword = (password: string): PasswordAnalysis => {
     "Brute Force (Offline)": formatCrackTime(offlineFastHashCrackTime),
     "Online Attack (Throttled)": formatCrackTime(onlineCrackTime)
   };
+
+  // Generate AI enhanced password
+  const aiEnhanced = enhancePassword(password, score);
   
   // Return comprehensive analysis
   return {
@@ -120,6 +124,7 @@ export const analyzePassword = (password: string): PasswordAnalysis => {
     passphraseSuggestions: [],
     breachData: {
       found: false
-    }
+    },
+    aiEnhanced // Always include the AI enhanced password suggestion
   };
 };
