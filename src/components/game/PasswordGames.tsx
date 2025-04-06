@@ -3,10 +3,14 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Gamepad2, Lock, PhoneIcon, Brain, X, Trophy } from "lucide-react";
+import { Gamepad2, Lock, PhoneIcon, Brain, X, Trophy, Shield, Swords, Puzzle, Zap } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import BruteForceGame from "./games/BruteForceGame";
 import PhishingGame from "./games/PhishingGame";
+import PasswordStrengthGame from "./games/PasswordStrengthGame";
+import BreachSimulatorGame from "./games/BreachSimulatorGame";
+import PasswordMatchingGame from "./games/PasswordMatchingGame";
+import HackingDefenseGame from "./games/HackingDefenseGame";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import useGameProgress from "@/hooks/useGameProgress";
@@ -30,6 +34,15 @@ const PasswordGames = () => {
       component: (props: any) => <BruteForceGame {...props} />
     },
     {
+      id: "strengthchallenge",
+      title: "Password Strength Challenge",
+      description: "Identify the strongest passwords and improve your security awareness.",
+      icon: <Shield className="h-6 w-6" />,
+      difficulty: "Beginner",
+      baseXp: 100,
+      component: (props: any) => <PasswordStrengthGame {...props} />
+    },
+    {
       id: "phishing",
       title: "Phishing Mastermind",
       description: "Spot phishing attempts and protect your credentials in this security awareness game.",
@@ -37,6 +50,33 @@ const PasswordGames = () => {
       difficulty: "Intermediate",
       baseXp: 150,
       component: (props: any) => <PhishingGame {...props} />
+    },
+    {
+      id: "passwordmatching",
+      title: "Password Matching Challenge",
+      description: "Match weak passwords with their stronger alternatives in this memory game.",
+      icon: <Puzzle className="h-6 w-6" />,
+      difficulty: "Beginner",
+      baseXp: 125,
+      component: (props: any) => <PasswordMatchingGame {...props} />
+    },
+    {
+      id: "breachsimulator",
+      title: "Breach Simulator",
+      description: "Test your knowledge about proper responses to data breaches and security incidents.",
+      icon: <Swords className="h-6 w-6" />,
+      difficulty: "Intermediate",
+      baseXp: 150,
+      component: (props: any) => <BreachSimulatorGame {...props} />
+    },
+    {
+      id: "hackingdefense",
+      title: "Hacking Defense",
+      description: "Learn to defend against different password attack vectors in this interactive simulation.",
+      icon: <Zap className="h-6 w-6" />,
+      difficulty: "Advanced",
+      baseXp: 175,
+      component: (props: any) => <HackingDefenseGame {...props} />
     }
   ];
 
@@ -104,13 +144,13 @@ const PasswordGames = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {games.map((game) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {games.map((game, index) => (
           <motion.div
             key={game.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
+            transition={{ duration: 0.4, delay: index * 0.1 }}
           >
             <Card className="h-full flex flex-col transition-all hover:shadow-md">
               <CardHeader>
@@ -118,7 +158,13 @@ const PasswordGames = () => {
                   <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                     {game.icon}
                   </div>
-                  <Badge variant={game.difficulty === "Beginner" ? "outline" : "secondary"}>
+                  <Badge variant={
+                    game.difficulty === "Beginner" 
+                      ? "outline" 
+                      : game.difficulty === "Intermediate" 
+                        ? "secondary" 
+                        : "destructive"
+                  }>
                     {game.difficulty}
                   </Badge>
                 </div>

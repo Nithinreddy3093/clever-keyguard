@@ -82,7 +82,11 @@ export const generateSongLyricShuffle = (): string => {
     { line: 'highway to hell', key: 'H1ghw4yH3ll' },
     { line: 'dont stop believing', key: 'D0ntSt0pB3l13v3' },
     { line: 'stairway to heaven', key: 'St41rw4yH34v3n' },
-    { line: 'let it be let it be', key: 'L3t1tB3' }
+    { line: 'let it be let it be', key: 'L3t1tB3' },
+    { line: 'all you need is love', key: '4llN33dL0v3' },
+    { line: 'under pressure pushing down on me', key: 'Und3rPr355ur3' },
+    { line: 'we will rock you', key: 'W3W1llR0ckU' },
+    { line: 'bohemian rhapsody', key: 'B0h3m14nRh4p' }
   ];
   
   const lyric = lyrics[getRandomInt(0, lyrics.length - 1)];
@@ -97,7 +101,10 @@ export const generateMemePasswords = (): string => {
   const memes = [
     'EpicFail', 'Shrekswamp', 'ThisIsFine', 'DogeDoge', 'NyanCat',
     'ChungusBig', 'StonksMeme', 'PikachuShock', 'SpongeMock',
-    'SuccessKid', 'KeanuReeves', 'CatSalad', 'YoDawg', 'BadLuckBrian'
+    'SuccessKid', 'KeanuReeves', 'CatSalad', 'YoDawg', 'BadLuckBrian',
+    'DistractedBf', 'OneDoesnt', 'GigaChad', 'SadCat', 'PepeLaugh',
+    'MindBlown', 'DabSquad', 'RickRoll', 'MonkaS', 'KappaFace',
+    'AmongUs', 'TrollFace', 'MoonMoon', 'CoffeeRain', 'HamsterDance'
   ];
   
   const meme = memes[getRandomInt(0, memes.length - 1)];
@@ -116,14 +123,25 @@ export const generateMemePasswords = (): string => {
 
 // 5. Insult Generator
 export const generateInsultPasswords = (): string => {
-  const adjectives = ['Silly', 'Lazy', 'Clumsy', 'Wimpy', 'Dorky', 'Klutzy', 'Goofy', 'Dopey', 'Loopy', 'Wacky'];
-  const nouns = ['Donkey', 'Potato', 'Banana', 'Chicken', 'Llama', 'Penguin', 'Noodle', 'Doughnut', 'Walrus', 'Hippo'];
+  const adjectives = ['Silly', 'Lazy', 'Clumsy', 'Wimpy', 'Dorky', 'Klutzy', 'Goofy', 'Dopey', 'Loopy', 'Wacky',
+                      'Sloppy', 'Fuzzy', 'Wobbly', 'Groggy', 'Ditzy', 'Lumpy', 'Frumpy', 'Wonky', 'Dinky', 'Flimsy'];
+  const nouns = ['Donkey', 'Potato', 'Banana', 'Chicken', 'Llama', 'Penguin', 'Noodle', 'Doughnut', 'Walrus', 'Hippo',
+                 'Pickle', 'Toaster', 'Weasel', 'Muffin', 'Broccoli', 'Pancake', 'Poodle', 'Cabbage', 'Waffle', 'Gerbil'];
   
   const adjective = adjectives[getRandomInt(0, adjectives.length - 1)];
   const noun = nouns[getRandomInt(0, nouns.length - 1)];
   const number = getRandomInt(10, 99);
   const symbol = symbols[getRandomInt(0, symbols.length - 1)];
-  const emoji = ['🐴', '🥔', '🍌', '🐔', '🦙', '🐧', '🍜', '🍩', '🦭', '🦛'][nouns.indexOf(noun)];
+  
+  // Find matching emoji or default to a random one
+  const matchingEmojiMap: Record<string, string> = {
+    'Donkey': '🐴', 'Potato': '🥔', 'Banana': '🍌', 'Chicken': '🐔', 'Llama': '🦙', 
+    'Penguin': '🐧', 'Noodle': '🍜', 'Doughnut': '🍩', 'Walrus': '🦭', 'Hippo': '🦛',
+    'Pickle': '🥒', 'Toaster': '🍞', 'Weasel': '🐹', 'Muffin': '🧁', 'Broccoli': '🥦',
+    'Pancake': '🥞', 'Poodle': '🐩', 'Cabbage': '🥬', 'Waffle': '🧇', 'Gerbil': '🐹'
+  };
+  
+  const emoji = matchingEmojiMap[noun] || emojis[getRandomInt(0, emojis.length - 1)];
   
   return `${adjective}${noun}${symbol}${number}${emoji}`;
 };
@@ -138,27 +156,49 @@ export const generateMovieQuoteRemix = (): string => {
     { quote: 'You Can\'t Handle The Truth', key: 'C4ntH4ndl3Truth' },
     { quote: 'Life Is Like A Box Of Chocolates', key: 'L1f3B0xCh0c0' },
     { quote: 'Say Hello To My Little Friend', key: 'H3ll0L1ttl3Fr13nd' },
-    { quote: 'I Am Your Father', key: '1AmY0urF4th3r' }
+    { quote: 'I Am Your Father', key: '1AmY0urF4th3r' },
+    { quote: 'Here\'s Looking At You Kid', key: 'L00k1ngAtY0u' },
+    { quote: 'Go Ahead Make My Day', key: 'M4k3MyD4y' },
+    { quote: 'You Talking To Me', key: 'T4lk1ngT0M3' },
+    { quote: 'Show Me The Money', key: 'Sh0wM3M0n3y' },
+    { quote: 'Nobody Puts Baby In A Corner', key: 'N0b0dyPut$B4by' },
+    { quote: 'I See Dead People', key: '1S33D34dP30pl3' },
+    { quote: 'To Infinity And Beyond', key: '1nf1n1tyB3y0nd' }
   ];
   
   const quote = quotes[getRandomInt(0, quotes.length - 1)];
   const year = getRandomInt(2020, 2030);
   const symbol = symbols[getRandomInt(0, symbols.length - 1)];
-  const emoji = ['✨', '🤖', '🚀', '🏠', '⚖️', '🍫', '🔫', '⚔️'][quotes.indexOf(quote)];
+  
+  // Matching emojis for quotes
+  const matchingEmojiMap: Record<string, string> = {
+    'MayTh3F0rc3': '✨', '1llB3B4ck': '🤖', 'H0ust0nPr0bl3m': '🚀',
+    'N0Pl4c3L1k3H0m3': '🏠', 'C4ntH4ndl3Truth': '⚖️', 'L1f3B0xCh0c0': '🍫',
+    'H3ll0L1ttl3Fr13nd': '🔫', '1AmY0urF4th3r': '⚔️', 'L00k1ngAtY0u': '🥂',
+    'M4k3MyD4y': '😎', 'T4lk1ngT0M3': '🗣️', 'Sh0wM3M0n3y': '💰',
+    'N0b0dyPut$B4by': '💃', '1S33D34dP30pl3': '👻', '1nf1n1tyB3y0nd': '🚀'
+  };
+  
+  const emoji = matchingEmojiMap[quote.key] || '🎬';
   
   return `${quote.key}${emoji}${symbol}${year}`;
 };
 
 // 7. Alien Language Mode
 export const generateAlienLanguage = (): string => {
-  const alienPrefixes = ['Xylo', 'Zorg', 'Klaatu', 'Blip', 'Quasar', 'Zeta', 'Vort', 'Drek', 'Neep', 'Glorp'];
-  const alienSuffixes = ['zoid', 'borg', 'norp', 'tron', 'plax', 'morphs', 'thulhu', 'blorg', 'thrak', 'plorg'];
+  const alienPrefixes = ['Xylo', 'Zorg', 'Klaatu', 'Blip', 'Quasar', 'Zeta', 'Vort', 'Drek', 'Neep', 'Glorp',
+                         'Thorg', 'Krang', 'Meeple', 'Zoink', 'Pluto', 'Altair', 'Orion', 'Noova', 'Jargon', 'Bleep'];
+  const alienSuffixes = ['zoid', 'borg', 'norp', 'tron', 'plax', 'morphs', 'thulhu', 'blorg', 'thrak', 'plorg',
+                         'flux', 'nax', 'meep', 'topia', 'zon', 'plex', 'glax', 'tron', 'zar', 'bloop'];
   
   const prefix = alienPrefixes[getRandomInt(0, alienPrefixes.length - 1)];
   const suffix = alienSuffixes[getRandomInt(0, alienSuffixes.length - 1)];
   const number = getRandomInt(10, 99);
   const symbol = symbols[getRandomInt(0, symbols.length - 1)];
-  const emoji = ['☄️', '👽', '🛸', '🪐', '🌌', '👾', '🌠', '🤖', '⚡', '🌈'][alienPrefixes.indexOf(prefix)];
+  
+  // Space-themed emojis
+  const spaceEmojis = ['☄️', '👽', '🛸', '🪐', '🌌', '👾', '🌠', '🤖', '⚡', '🌈', '🌍', '🌓', '🌕', '🚀', '⭐'];
+  const emoji = spaceEmojis[getRandomInt(0, spaceEmojis.length - 1)];
   
   return `${prefix}${suffix}${number}${symbol}${emoji}`;
 };
@@ -167,7 +207,8 @@ export const generateAlienLanguage = (): string => {
 export const generateKeyboardDance = (): string => {
   const patterns = [
     'QwErTy', 'AsdfGh', 'ZxCvBn', 'QazWsx', 'EdcRfv', 'TgbYhn',
-    'WedcVfr', 'QazXsw', 'PlmOkn', 'ZaqXsw', 'MnbVcx', 'IkjuYh'
+    'WedcVfr', 'QazXsw', 'PlmOkn', 'ZaqXsw', 'MnbVcx', 'IkjuYh',
+    'QwErAsdf', 'ZxcQaz', 'YhnUjm', 'WsxEdc', 'OkmIjn', 'LkjHgf'
   ];
   
   const pattern = patterns[getRandomInt(0, patterns.length - 1)];
@@ -182,13 +223,18 @@ export const generateKeyboardDance = (): string => {
 export const generateAutoRoastPasswords = (): string => {
   const roasts = [
     'UForgetUrPwD', 'ClickedReset2x', 'PwdOnStickyNote', 'Pw123456Again', 'BirthdayAsPwd',
-    'DumbPassword', 'WeakPwdUser', 'HackedAgain', 'NotSecureAtAll', 'ForgottenTomorrow'
+    'DumbPassword', 'WeakPwdUser', 'HackedAgain', 'NotSecureAtAll', 'ForgottenTomorrow',
+    'BruteForceVictim', 'DictionaryAttacked', 'PasswordReuser', 'HackerMagnet', 'WhatsMyPassword',
+    'LeakedInBreaches', 'DuhhItsMyBirthday', 'SameAsMySocial', 'AdminIsMyPassword', 'RainbowTable'
   ];
   
   const roast = roasts[getRandomInt(0, roasts.length - 1)];
   const number = getRandomInt(10, 99);
   const symbol = symbols[getRandomInt(0, symbols.length - 1)];
-  const emoji = ['🤡', '🙄', '🤦', '😂', '🧐', '🤪', '😱', '😬', '🤔', '😴'][roasts.indexOf(roast)];
+  
+  // Funny emojis for roasts
+  const roastEmojis = ['🤡', '🙄', '🤦', '😂', '🧐', '🤪', '😱', '😬', '🤔', '😴', '💩', '🙃', '😅', '🤨', '🧠', '🤯', '🥴', '😒', '🫠', '🫣'];
+  const emoji = roastEmojis[getRandomInt(0, roastEmojis.length - 1)];
   
   return `${roast}${symbol}${number}${emoji}`;
 };
@@ -209,6 +255,44 @@ export const generateHackProofMode = (): string => {
   }
   
   return password;
+};
+
+// 11. Fantasy Character Generator (NEW)
+export const generateFantasyCharacter = (): string => {
+  const fantasyPrefixes = ['Dragon', 'Wizard', 'Elf', 'Knight', 'Rogue', 'Sorcerer', 'Paladin', 'Ranger', 
+                           'Warlock', 'Archer', 'Druid', 'Mage', 'Warrior', 'Bard', 'Shaman'];
+  const fantasyTitles = ['Slayer', 'Hunter', 'Master', 'Keeper', 'Warden', 'Guardian', 'Walker',
+                         'Lord', 'King', 'Queen', 'Prince', 'Princess', 'Champion'];
+  
+  const prefix = fantasyPrefixes[getRandomInt(0, fantasyPrefixes.length - 1)];
+  const title = fantasyTitles[getRandomInt(0, fantasyTitles.length - 1)];
+  const year = getRandomInt(1000, 9999);
+  const symbol = symbols[getRandomInt(0, symbols.length - 1)];
+  
+  // Fantasy-themed emojis
+  const fantasyEmojis = ['🧙‍♂️', '🧝‍♀️', '🧚', '🔮', '🏹', '⚔️', '🗡️', '🛡️', '👑', '🧿', '🗝️', '🏰', '🐉', '🦄', '🧝‍♂️'];
+  const emoji = fantasyEmojis[getRandomInt(0, fantasyEmojis.length - 1)];
+  
+  return `${prefix}${title}${symbol}${year}${emoji}`;
+};
+
+// 12. Tech Stack Generator (NEW)
+export const generateTechStack = (): string => {
+  const frontendTech = ['React', 'Angular', 'Vue', 'Svelte', 'Next', 'Nuxt', 'Flutter', 'Tailwind'];
+  const backendTech = ['Node', 'Python', 'Django', 'Rails', 'Go', 'Java', 'Nest', 'Laravel', 'Express'];
+  const databases = ['Mongo', 'Postgres', 'MySQL', 'Redis', 'Firebase', 'Supabase', 'DynamoDB'];
+  
+  const frontend = frontendTech[getRandomInt(0, frontendTech.length - 1)];
+  const backend = backendTech[getRandomInt(0, backendTech.length - 1)];
+  const db = databases[getRandomInt(0, databases.length - 1)];
+  const number = getRandomInt(10, 99);
+  const symbol = symbols[getRandomInt(0, symbols.length - 1)];
+  
+  // Tech emojis
+  const techEmojis = ['💻', '⚛️', '🚀', '🔥', '⚙️', '🛠️', '🧰', '📱', '🌐', '☁️'];
+  const emoji = techEmojis[getRandomInt(0, techEmojis.length - 1)];
+  
+  return `${frontend}${backend}${db}${symbol}${number}${emoji}`;
 };
 
 // Function to generate a password based on the selected theme
@@ -234,6 +318,10 @@ export const generateThemedPassword = (theme: string): string => {
       return generateAutoRoastPasswords();
     case 'hackProofMode':
       return generateHackProofMode();
+    case 'fantasyCharacter':
+      return generateFantasyCharacter();
+    case 'techStack':
+      return generateTechStack();
     default:
       return generateHackProofMode(); // Default to hack-proof mode
   }
@@ -244,8 +332,9 @@ export const calculatePasswordStrength = (password: string): number => {
   
   let strength = 0;
   
-  // Length contribution
-  strength += Math.min(password.length * 4, 40);
+  // Length contribution (exponentially stronger with length)
+  const lengthFactor = Math.min(password.length * 4, 50); // Up to 50 points for length
+  strength += lengthFactor;
   
   // Character variety contribution
   if (/[A-Z]/.test(password)) strength += 10;
@@ -258,6 +347,18 @@ export const calculatePasswordStrength = (password: string): number => {
   const repeatingPatterns = password.match(/(.)\1{2,}/g);
   if (repeatingPatterns) {
     strength -= repeatingPatterns.length * 5;
+  }
+  
+  // Penalty for sequential characters
+  if (/123|234|345|456|567|678|789|987|876|765|654|543|432|321/.test(password)) {
+    strength -= 10;
+  }
+  
+  // Bonus for mixed character types in middle of password (not just at beginning/end)
+  const middleSection = password.substring(1, password.length - 1);
+  if (/[A-Z]/.test(middleSection) && /[0-9]/.test(middleSection) && 
+      /[^A-Za-z0-9]/.test(middleSection)) {
+    strength += 10;
   }
   
   // Ensure strength is between 0 and 100
@@ -279,4 +380,92 @@ export const getStrengthInfo = (strength: number): { label: string; color: strin
   } else {
     return { label: "Weak", color: "text-red-500" };
   }
+};
+
+// Generate passwords based on criteria (NEW)
+export interface CustomPasswordOptions {
+  length: number;
+  includeUpper: boolean;
+  includeLower: boolean;
+  includeNumbers: boolean;
+  includeSymbols: boolean;
+  includeEmoji: boolean;
+  avoidSimilar: boolean;
+}
+
+// Function to generate customized passwords (NEW)
+export const generateCustomPassword = (options: CustomPasswordOptions): string => {
+  const {
+    length = 12,
+    includeUpper = true,
+    includeLower = true,
+    includeNumbers = true,
+    includeSymbols = true,
+    includeEmoji = false,
+    avoidSimilar = false
+  } = options;
+  
+  // Character sets
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // Removed I and O if avoiding similar
+  const upperAll = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const lower = 'abcdefghjkmnpqrstuvwxyz'; // Removed l and o if avoiding similar
+  const lowerAll = 'abcdefghijklmnopqrstuvwxyz';
+  const numbers = avoidSimilar ? '23456789' : '0123456789'; // Removed 0 and 1 if avoiding similar
+  const symbols = '!@#$%^&*()-_=+[]{}|;:,.<>?';
+  const similarAmbiguous = 'iIlL1oO0';
+  
+  // Build character set based on options
+  let chars = '';
+  if (includeUpper) chars += avoidSimilar ? upper : upperAll;
+  if (includeLower) chars += avoidSimilar ? lower : lowerAll;
+  if (includeNumbers) chars += numbers;
+  if (includeSymbols) chars += symbols;
+  
+  if (chars.length === 0) {
+    // Default to lowercase if nothing selected
+    chars = avoidSimilar ? lower : lowerAll;
+  }
+  
+  // Generate password
+  let password = '';
+  for (let i = 0; i < length - (includeEmoji ? 1 : 0); i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  
+  // Add emoji if requested
+  if (includeEmoji) {
+    password += emojis[getRandomInt(0, emojis.length - 1)];
+  }
+  
+  // Ensure at least one of each required type
+  let finalPassword = password;
+  if (includeUpper && !/[A-Z]/.test(finalPassword)) {
+    const charSet = avoidSimilar ? upper : upperAll;
+    finalPassword = charSet.charAt(getRandomInt(0, charSet.length - 1)) + 
+                    finalPassword.substring(1);
+  }
+  
+  if (includeLower && !/[a-z]/.test(finalPassword)) {
+    const charSet = avoidSimilar ? lower : lowerAll;
+    const pos = getRandomInt(0, finalPassword.length - 1);
+    finalPassword = finalPassword.substring(0, pos) + 
+                    charSet.charAt(getRandomInt(0, charSet.length - 1)) + 
+                    finalPassword.substring(pos + 1);
+  }
+  
+  if (includeNumbers && !/[0-9]/.test(finalPassword)) {
+    const pos = getRandomInt(0, finalPassword.length - 1);
+    finalPassword = finalPassword.substring(0, pos) + 
+                    numbers.charAt(getRandomInt(0, numbers.length - 1)) + 
+                    finalPassword.substring(pos + 1);
+  }
+  
+  if (includeSymbols && !/[^A-Za-z0-9]/.test(finalPassword.replace(/[\u{1F300}-\u{1F6FF}]/gu, ''))) {
+    const pos = getRandomInt(0, finalPassword.length - 1);
+    finalPassword = finalPassword.substring(0, pos) + 
+                    symbols.charAt(getRandomInt(0, symbols.length - 1)) + 
+                    finalPassword.substring(pos + 1);
+  }
+  
+  return finalPassword;
 };
