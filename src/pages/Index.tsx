@@ -10,7 +10,7 @@ import PasswordFeedback from "@/components/PasswordFeedback";
 import SecurityTips from "@/components/SecurityTips";
 import { 
   Shield, Lock, AlertTriangle, Save, Zap, KeyRound, Bot, 
-  Moon, Sun, Sparkles, Trophy, RadioTower, Sidebar, Gamepad2
+  Moon, Sun, Sparkles, Trophy, RadioTower, Sidebar, Gamepad2, Skull
 } from "lucide-react";
 import { analyzePassword } from "@/lib/passwordAnalyzer";
 import { PasswordAnalysis } from "@/types/password";
