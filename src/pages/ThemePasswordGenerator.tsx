@@ -263,7 +263,7 @@ const ThemePasswordGenerator = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-      <div className="container max-w-5xl py-12 px-4 sm:px-6">
+      <div className="container max-w-7xl py-8 md:py-12 px-4 sm:px-6">
         <div className="mb-4">
           <Button variant="ghost" size="sm" asChild className="flex items-center gap-1">
             <Link to="/">
@@ -275,34 +275,34 @@ const ThemePasswordGenerator = () => {
 
         <header className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <Shield className="h-16 w-16 text-primary" />
+            <Shield className="h-12 w-12 md:h-16 md:h-16 text-primary" />
           </div>
-          <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white mb-3">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 dark:text-white mb-3">
             Password Generator
           </h1>
-          <p className="text-xl text-slate-600 dark:text-slate-300 mb-4">
+          <p className="text-lg md:text-xl text-slate-600 dark:text-slate-300 mb-6">
             Create secure, memorable passwords with creative themes
           </p>
           
-          <div className="w-full max-w-md mx-auto">
+          <div className="w-full max-w-5xl mx-auto">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid grid-cols-3 mb-8">
+              <TabsList className="grid grid-cols-3 mb-6">
                 <TabsTrigger value="themed">Themed</TabsTrigger>
                 <TabsTrigger value="custom">Custom</TabsTrigger>
                 <TabsTrigger value="saved">Saved</TabsTrigger>
               </TabsList>
               
               <TabsContent value="themed">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Theme Selection */}
-                  <Card className="border-none shadow-lg">
+                  <Card className="border-none shadow-lg h-fit sticky top-4">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-xl flex items-center gap-2">
                         <Palette className="h-5 w-5" />
                         Password Themes
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="max-h-[600px] overflow-y-auto pr-2">
+                    <CardContent className="max-h-[450px] md:max-h-[600px] overflow-y-auto pr-2 scrollbar-thin">
                       <RadioGroup 
                         value={selectedTheme} 
                         onValueChange={setSelectedTheme}
@@ -344,7 +344,7 @@ const ThemePasswordGenerator = () => {
                     </CardHeader>
                     <CardContent className="space-y-6">
                       <div>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
                           {currentThemeDescription}
                         </p>
                         
@@ -355,11 +355,11 @@ const ThemePasswordGenerator = () => {
                             
                             return (
                               <div key={index} className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
-                                <div className="flex justify-between items-center mb-2">
-                                  <p className="font-mono text-lg font-medium break-all">
+                                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 mb-2">
+                                  <p className="font-mono text-base md:text-lg font-medium break-all">
                                     {password}
                                   </p>
-                                  <div className="flex space-x-1">
+                                  <div className="flex space-x-1 self-end md:self-center">
                                     <Button 
                                       variant="ghost" 
                                       size="icon"
@@ -428,9 +428,9 @@ const ThemePasswordGenerator = () => {
               </TabsContent>
 
               <TabsContent value="custom">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Custom Password Options */}
-                  <Card className="border-none shadow-lg">
+                  <Card className="border-none shadow-lg h-fit sticky top-4">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-xl flex items-center gap-2">
                         <Settings className="h-5 w-5" />
@@ -464,68 +464,61 @@ const ThemePasswordGenerator = () => {
                         
                         <div className="space-y-3">
                           <Label>Character Types</Label>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm">Include Uppercase (A-Z)</span>
-                            <Switch
-                              checked={customOptions.includeUpper}
-                              onCheckedChange={(checked) => {
-                                setCustomOptions({...customOptions, includeUpper: checked});
-                              }}
-                            />
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm">Include Lowercase (a-z)</span>
-                            <Switch
-                              checked={customOptions.includeLower}
-                              onCheckedChange={(checked) => {
-                                setCustomOptions({...customOptions, includeLower: checked});
-                              }}
-                            />
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm">Include Numbers (0-9)</span>
-                            <Switch
-                              checked={customOptions.includeNumbers}
-                              onCheckedChange={(checked) => {
-                                setCustomOptions({...customOptions, includeNumbers: checked});
-                              }}
-                            />
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm">Include Symbols (!@#$...)</span>
-                            <Switch
-                              checked={customOptions.includeSymbols}
-                              onCheckedChange={(checked) => {
-                                setCustomOptions({...customOptions, includeSymbols: checked});
-                              }}
-                            />
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm">Include Emoji</span>
-                            <Switch
-                              checked={customOptions.includeEmoji}
-                              onCheckedChange={(checked) => {
-                                setCustomOptions({...customOptions, includeEmoji: checked});
-                              }}
-                            />
-                          </div>
-                        </div>
-                        
-                        <Separator />
-                        
-                        <div className="space-y-3">
-                          <Label>Additional Options</Label>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <span className="text-sm">Avoid Ambiguous Characters</span>
-                              <p className="text-xs text-muted-foreground">(1, l, I, 0, O, etc.)</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm">Include Uppercase (A-Z)</span>
+                              <Switch
+                                checked={customOptions.includeUpper}
+                                onCheckedChange={(checked) => {
+                                  setCustomOptions({...customOptions, includeUpper: checked});
+                                }}
+                              />
                             </div>
-                            <Switch
-                              checked={customOptions.avoidSimilar}
-                              onCheckedChange={(checked) => {
-                                setCustomOptions({...customOptions, avoidSimilar: checked});
-                              }}
-                            />
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm">Include Lowercase (a-z)</span>
+                              <Switch
+                                checked={customOptions.includeLower}
+                                onCheckedChange={(checked) => {
+                                  setCustomOptions({...customOptions, includeLower: checked});
+                                }}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm">Include Numbers (0-9)</span>
+                              <Switch
+                                checked={customOptions.includeNumbers}
+                                onCheckedChange={(checked) => {
+                                  setCustomOptions({...customOptions, includeNumbers: checked});
+                                }}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm">Include Symbols (!@#$...)</span>
+                              <Switch
+                                checked={customOptions.includeSymbols}
+                                onCheckedChange={(checked) => {
+                                  setCustomOptions({...customOptions, includeSymbols: checked});
+                                }}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm">Include Emoji</span>
+                              <Switch
+                                checked={customOptions.includeEmoji}
+                                onCheckedChange={(checked) => {
+                                  setCustomOptions({...customOptions, includeEmoji: checked});
+                                }}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm">Avoid Ambiguous Characters</span>
+                              <Switch
+                                checked={customOptions.avoidSimilar}
+                                onCheckedChange={(checked) => {
+                                  setCustomOptions({...customOptions, avoidSimilar: checked});
+                                }}
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -556,11 +549,11 @@ const ThemePasswordGenerator = () => {
                           
                           return (
                             <div key={index} className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
-                              <div className="flex justify-between items-center mb-2">
-                                <p className="font-mono text-lg font-medium break-all">
+                              <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 mb-2">
+                                <p className="font-mono text-base md:text-lg font-medium break-all">
                                   {password}
                                 </p>
-                                <div className="flex space-x-1">
+                                <div className="flex space-x-1 self-end md:self-center">
                                   <Button 
                                     variant="ghost" 
                                     size="icon"
@@ -640,18 +633,18 @@ const ThemePasswordGenerator = () => {
                   </CardHeader>
                   <CardContent>
                     {savedPasswords.length > 0 ? (
-                      <div className="space-y-3">
+                      <div className="space-y-3 max-h-[600px] overflow-y-auto scrollbar-thin">
                         {savedPasswords.map((password, index) => {
                           const strength = calculatePasswordStrength(password);
                           const strengthInfo = getStrengthInfo(strength);
                           
                           return (
                             <div key={index} className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
-                              <div className="flex justify-between items-center mb-2">
-                                <p className="font-mono text-lg font-medium break-all">
+                              <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 mb-2">
+                                <p className="font-mono text-base md:text-lg font-medium break-all">
                                   {password}
                                 </p>
-                                <div className="flex space-x-1">
+                                <div className="flex space-x-1 self-end md:self-center">
                                   <Button 
                                     variant="ghost" 
                                     size="icon"
@@ -730,7 +723,7 @@ const ThemePasswordGenerator = () => {
           
           {passwordAnalysis && (
             <div className="space-y-4 py-4">
-              <div className="font-mono text-center p-3 bg-slate-100 dark:bg-slate-800 rounded-lg">
+              <div className="font-mono text-center p-3 bg-slate-100 dark:bg-slate-800 rounded-lg overflow-x-auto">
                 {selectedPassword}
               </div>
               
@@ -745,7 +738,7 @@ const ThemePasswordGenerator = () => {
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg">
                   <p className="text-sm font-medium mb-1">Character Types</p>
-                  <div className="flex gap-1.5 text-xs mt-2">
+                  <div className="flex flex-wrap gap-1.5 text-xs mt-2">
                     <span className={`px-2 py-1 rounded ${passwordAnalysis.hasUpper ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
                       A-Z
                     </span>

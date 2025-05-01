@@ -59,22 +59,26 @@ const GameTabs = ({
   
   return (
     <Tabs defaultValue="game" className="w-full" onValueChange={setActiveTab}>
-      <TabsList className="grid grid-cols-4 mb-6">
+      <TabsList className="grid grid-cols-2 md:grid-cols-4 mb-6">
         <TabsTrigger value="game" className="flex items-center">
           <Shield className="mr-2 h-4 w-4" />
-          Password Game
+          <span className="hidden sm:inline">Password Game</span>
+          <span className="sm:hidden">Game</span>
         </TabsTrigger>
         <TabsTrigger value="challenges" className="flex items-center">
           <Target className="mr-2 h-4 w-4" />
-          Challenges
+          <span className="hidden sm:inline">Challenges</span>
+          <span className="sm:hidden">Challenges</span>
         </TabsTrigger>
         <TabsTrigger value="minigames" className="flex items-center">
           <Gamepad2 className="mr-2 h-4 w-4" />
-          Games
+          <span className="hidden sm:inline">Games</span>
+          <span className="sm:hidden">Games</span>
         </TabsTrigger>
         <TabsTrigger value="leaderboard" className="flex items-center">
           <Trophy className="mr-2 h-4 w-4" />
-          Leaderboard
+          <span className="hidden sm:inline">Leaderboard</span>
+          <span className="sm:hidden">Ranks</span>
         </TabsTrigger>
       </TabsList>
       
