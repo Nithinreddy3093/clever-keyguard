@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -285,436 +284,438 @@ const ThemePasswordGenerator = () => {
             Create secure, memorable passwords with creative themes
           </p>
           
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-md mx-auto">
-            <TabsList className="grid grid-cols-3 mb-8">
-              <TabsTrigger value="themed">Themed</TabsTrigger>
-              <TabsTrigger value="custom">Custom</TabsTrigger>
-              <TabsTrigger value="saved">Saved</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </header>
-
-        <TabsContent value="themed" className={activeTab === "themed" ? "block" : "hidden"}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Theme Selection */}
-            <Card className="border-none shadow-lg">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <Palette className="h-5 w-5" />
-                  Password Themes
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="max-h-[600px] overflow-y-auto pr-2">
-                <RadioGroup 
-                  value={selectedTheme} 
-                  onValueChange={setSelectedTheme}
-                  className="space-y-3"
-                >
-                  {passwordThemes.map((theme) => (
-                    <div key={theme.id} className="flex items-start space-x-2 rounded-md p-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                      <RadioGroupItem value={theme.id} id={theme.id} className="mt-1" />
-                      <div className="grid gap-1.5 leading-none">
-                        <Label htmlFor={theme.id} className="text-base font-medium flex items-center gap-2">
-                          <span>{theme.emoji}</span> {theme.name}
-                        </Label>
-                        <p className="text-sm text-muted-foreground">
-                          {theme.description} (e.g., <span className="font-mono">{theme.example}</span>)
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </CardContent>
-              <CardFooter>
-                <Button 
-                  className="w-full flex items-center justify-center gap-2"
-                  onClick={handleGenerateThemedPasswords}
-                >
-                  <Wand2 className="h-4 w-4" />
-                  Generate New Passwords
-                </Button>
-              </CardFooter>
-            </Card>
-
-            {/* Generated Passwords */}
-            <Card className="border-none shadow-lg">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <Wand2 className="h-5 w-5" />
-                  Generated Passwords
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
-                    {currentThemeDescription}
-                  </p>
-                  
-                  <div className="space-y-3">
-                    {generatedPasswords.map((password, index) => {
-                      const strength = passwordStrengths[index];
-                      const strengthInfo = getStrengthInfo(strength);
-                      
-                      return (
-                        <div key={index} className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
-                          <div className="flex justify-between items-center mb-2">
-                            <p className="font-mono text-lg font-medium break-all">
-                              {password}
-                            </p>
-                            <div className="flex space-x-1">
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => showAnalysis(password)}
-                                title="Analyze Password"
-                              >
-                                <Shield className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => savePassword(password)}
-                                title="Save Password"
-                              >
-                                <Save className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => copyToClipboard(password, index)}
-                                title="Copy to Clipboard"
-                              >
-                                {copied === index ? (
-                                  <Check className="h-4 w-4 text-green-500" />
-                                ) : (
-                                  <Copy className="h-4 w-4" />
-                                )}
-                              </Button>
+          <div className="w-full max-w-md mx-auto">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid grid-cols-3 mb-8">
+                <TabsTrigger value="themed">Themed</TabsTrigger>
+                <TabsTrigger value="custom">Custom</TabsTrigger>
+                <TabsTrigger value="saved">Saved</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="themed">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Theme Selection */}
+                  <Card className="border-none shadow-lg">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-xl flex items-center gap-2">
+                        <Palette className="h-5 w-5" />
+                        Password Themes
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="max-h-[600px] overflow-y-auto pr-2">
+                      <RadioGroup 
+                        value={selectedTheme} 
+                        onValueChange={setSelectedTheme}
+                        className="space-y-3"
+                      >
+                        {passwordThemes.map((theme) => (
+                          <div key={theme.id} className="flex items-start space-x-2 rounded-md p-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                            <RadioGroupItem value={theme.id} id={theme.id} className="mt-1" />
+                            <div className="grid gap-1.5 leading-none">
+                              <Label htmlFor={theme.id} className="text-base font-medium flex items-center gap-2">
+                                <span>{theme.emoji}</span> {theme.name}
+                              </Label>
+                              <p className="text-sm text-muted-foreground">
+                                {theme.description} (e.g., <span className="font-mono">{theme.example}</span>)
+                              </p>
                             </div>
                           </div>
-                          <div className="flex justify-between items-center text-sm">
-                            <span className={`font-medium ${strengthInfo.color}`}>
-                              {strengthInfo.label}
-                            </span>
-                            <span className="text-slate-500 dark:text-slate-400">
-                              Strength: {strength}%
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        ))}
+                      </RadioGroup>
+                    </CardContent>
+                    <CardFooter>
+                      <Button 
+                        className="w-full flex items-center justify-center gap-2"
+                        onClick={handleGenerateThemedPasswords}
+                      >
+                        <Wand2 className="h-4 w-4" />
+                        Generate New Passwords
+                      </Button>
+                    </CardFooter>
+                  </Card>
 
-                  <Button 
-                    className="w-full mt-4 flex items-center justify-center"
-                    onClick={handleGenerateThemedPasswords}
-                  >
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Generate New Passwords
-                  </Button>
-                </div>
-
-                <div className="text-sm text-slate-500 dark:text-slate-400">
-                  <p className="mb-2"><strong>About Themed Passwords:</strong></p>
-                  <ul className="list-disc pl-5 space-y-1">
-                    <li>These passwords combine creativity with security</li>
-                    <li>All generated passwords include numbers and special characters</li>
-                    <li>Many include Unicode characters or emojis for extra security</li>
-                    <li>The more varied the character types, the stronger the password</li>
-                    <li>Some themes may not be appropriate for all accounts or services</li>
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="custom" className={activeTab === "custom" ? "block" : "hidden"}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Custom Password Options */}
-            <Card className="border-none shadow-lg">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  Customize Password
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <Label htmlFor="password-length">Password Length: {customOptions.length}</Label>
-                    </div>
-                    <Slider
-                      id="password-length"
-                      min={8}
-                      max={32}
-                      step={1}
-                      value={[customOptions.length]}
-                      onValueChange={(value) => {
-                        setCustomOptions({...customOptions, length: value[0]});
-                      }}
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>8</span>
-                      <span>20</span>
-                      <span>32</span>
-                    </div>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="space-y-3">
-                    <Label>Character Types</Label>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Include Uppercase (A-Z)</span>
-                      <Switch
-                        checked={customOptions.includeUpper}
-                        onCheckedChange={(checked) => {
-                          setCustomOptions({...customOptions, includeUpper: checked});
-                        }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Include Lowercase (a-z)</span>
-                      <Switch
-                        checked={customOptions.includeLower}
-                        onCheckedChange={(checked) => {
-                          setCustomOptions({...customOptions, includeLower: checked});
-                        }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Include Numbers (0-9)</span>
-                      <Switch
-                        checked={customOptions.includeNumbers}
-                        onCheckedChange={(checked) => {
-                          setCustomOptions({...customOptions, includeNumbers: checked});
-                        }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Include Symbols (!@#$...)</span>
-                      <Switch
-                        checked={customOptions.includeSymbols}
-                        onCheckedChange={(checked) => {
-                          setCustomOptions({...customOptions, includeSymbols: checked});
-                        }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Include Emoji</span>
-                      <Switch
-                        checked={customOptions.includeEmoji}
-                        onCheckedChange={(checked) => {
-                          setCustomOptions({...customOptions, includeEmoji: checked});
-                        }}
-                      />
-                    </div>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="space-y-3">
-                    <Label>Additional Options</Label>
-                    <div className="flex items-center justify-between">
+                  {/* Generated Passwords */}
+                  <Card className="border-none shadow-lg">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-xl flex items-center gap-2">
+                        <Wand2 className="h-5 w-5" />
+                        Generated Passwords
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
                       <div>
-                        <span className="text-sm">Avoid Ambiguous Characters</span>
-                        <p className="text-xs text-muted-foreground">(1, l, I, 0, O, etc.)</p>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
+                          {currentThemeDescription}
+                        </p>
+                        
+                        <div className="space-y-3">
+                          {generatedPasswords.map((password, index) => {
+                            const strength = passwordStrengths[index];
+                            const strengthInfo = getStrengthInfo(strength);
+                            
+                            return (
+                              <div key={index} className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
+                                <div className="flex justify-between items-center mb-2">
+                                  <p className="font-mono text-lg font-medium break-all">
+                                    {password}
+                                  </p>
+                                  <div className="flex space-x-1">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => showAnalysis(password)}
+                                      title="Analyze Password"
+                                    >
+                                      <Shield className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => savePassword(password)}
+                                      title="Save Password"
+                                    >
+                                      <Save className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => copyToClipboard(password, index)}
+                                      title="Copy to Clipboard"
+                                    >
+                                      {copied === index ? (
+                                        <Check className="h-4 w-4 text-green-500" />
+                                      ) : (
+                                        <Copy className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                  </div>
+                                </div>
+                                <div className="flex justify-between items-center text-sm">
+                                  <span className={`font-medium ${strengthInfo.color}`}>
+                                    {strengthInfo.label}
+                                  </span>
+                                  <span className="text-slate-500 dark:text-slate-400">
+                                    Strength: {strength}%
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        
+                        <Button 
+                          className="w-full mt-4 flex items-center justify-center"
+                          onClick={handleGenerateThemedPasswords}
+                        >
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                          Generate New Passwords
+                        </Button>
                       </div>
-                      <Switch
-                        checked={customOptions.avoidSimilar}
-                        onCheckedChange={(checked) => {
-                          setCustomOptions({...customOptions, avoidSimilar: checked});
-                        }}
-                      />
-                    </div>
-                  </div>
+                      
+                      <div className="text-sm text-slate-500 dark:text-slate-400">
+                        <p className="mb-2"><strong>About Themed Passwords:</strong></p>
+                        <ul className="list-disc pl-5 space-y-1">
+                          <li>These passwords combine creativity with security</li>
+                          <li>All generated passwords include numbers and special characters</li>
+                          <li>Many include Unicode characters or emojis for extra security</li>
+                          <li>The more varied the character types, the stronger the password</li>
+                          <li>Some themes may not be appropriate for all accounts or services</li>
+                        </ul>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
-                
-                <Button 
-                  className="w-full flex items-center justify-center gap-2" 
-                  onClick={handleGenerateCustomPasswords}
-                >
-                  <Wand2 className="h-4 w-4" />
-                  Generate Custom Passwords
-                </Button>
-              </CardContent>
-            </Card>
+              </TabsContent>
 
-            {/* Generated Custom Passwords */}
-            <Card className="border-none shadow-lg">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <Wand2 className="h-5 w-5" />
-                  Generated Passwords
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 mb-6">
-                  {customPasswords.map((password, index) => {
-                    const strength = customPasswordStrengths[index];
-                    const strengthInfo = getStrengthInfo(strength);
-                    
-                    return (
-                      <div key={index} className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
-                        <div className="flex justify-between items-center mb-2">
-                          <p className="font-mono text-lg font-medium break-all">
-                            {password}
-                          </p>
-                          <div className="flex space-x-1">
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              onClick={() => showAnalysis(password)}
-                              title="Analyze Password"
-                            >
-                              <Shield className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              onClick={() => savePassword(password)}
-                              title="Save Password"
-                            >
-                              <Save className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              onClick={() => copyToClipboard(password, index + 100)}
-                              title="Copy to Clipboard"
-                            >
-                              {copied === index + 100 ? (
-                                <Check className="h-4 w-4 text-green-500" />
-                              ) : (
-                                <Copy className="h-4 w-4" />
-                              )}
-                            </Button>
+              <TabsContent value="custom">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Custom Password Options */}
+                  <Card className="border-none shadow-lg">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-xl flex items-center gap-2">
+                        <Settings className="h-5 w-5" />
+                        Customize Password
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <Label htmlFor="password-length">Password Length: {customOptions.length}</Label>
+                          </div>
+                          <Slider
+                            id="password-length"
+                            min={8}
+                            max={32}
+                            step={1}
+                            value={[customOptions.length]}
+                            onValueChange={(value) => {
+                              setCustomOptions({...customOptions, length: value[0]});
+                            }}
+                          />
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>8</span>
+                            <span>20</span>
+                            <span>32</span>
                           </div>
                         </div>
-                        <div className="flex justify-between items-center text-sm">
-                          <span className={`font-medium ${strengthInfo.color}`}>
-                            {strengthInfo.label}
-                          </span>
-                          <span className="text-slate-500 dark:text-slate-400">
-                            Strength: {strength}%
-                          </span>
+                        
+                        <Separator />
+                        
+                        <div className="space-y-3">
+                          <Label>Character Types</Label>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Include Uppercase (A-Z)</span>
+                            <Switch
+                              checked={customOptions.includeUpper}
+                              onCheckedChange={(checked) => {
+                                setCustomOptions({...customOptions, includeUpper: checked});
+                              }}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Include Lowercase (a-z)</span>
+                            <Switch
+                              checked={customOptions.includeLower}
+                              onCheckedChange={(checked) => {
+                                setCustomOptions({...customOptions, includeLower: checked});
+                              }}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Include Numbers (0-9)</span>
+                            <Switch
+                              checked={customOptions.includeNumbers}
+                              onCheckedChange={(checked) => {
+                                setCustomOptions({...customOptions, includeNumbers: checked});
+                              }}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Include Symbols (!@#$...)</span>
+                            <Switch
+                              checked={customOptions.includeSymbols}
+                              onCheckedChange={(checked) => {
+                                setCustomOptions({...customOptions, includeSymbols: checked});
+                              }}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Include Emoji</span>
+                            <Switch
+                              checked={customOptions.includeEmoji}
+                              onCheckedChange={(checked) => {
+                                setCustomOptions({...customOptions, includeEmoji: checked});
+                              }}
+                            />
+                          </div>
+                        </div>
+                        
+                        <Separator />
+                        
+                        <div className="space-y-3">
+                          <Label>Additional Options</Label>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="text-sm">Avoid Ambiguous Characters</span>
+                              <p className="text-xs text-muted-foreground">(1, l, I, 0, O, etc.)</p>
+                            </div>
+                            <Switch
+                              checked={customOptions.avoidSimilar}
+                              onCheckedChange={(checked) => {
+                                setCustomOptions({...customOptions, avoidSimilar: checked});
+                              }}
+                            />
+                          </div>
                         </div>
                       </div>
-                    );
-                  })}
+                      
+                      <Button 
+                        className="w-full flex items-center justify-center gap-2" 
+                        onClick={handleGenerateCustomPasswords}
+                      >
+                        <Wand2 className="h-4 w-4" />
+                        Generate Custom Passwords
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Generated Custom Passwords */}
+                  <Card className="border-none shadow-lg">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-xl flex items-center gap-2">
+                        <Wand2 className="h-5 w-5" />
+                        Generated Passwords
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3 mb-6">
+                        {customPasswords.map((password, index) => {
+                          const strength = customPasswordStrengths[index];
+                          const strengthInfo = getStrengthInfo(strength);
+                          
+                          return (
+                            <div key={index} className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
+                              <div className="flex justify-between items-center mb-2">
+                                <p className="font-mono text-lg font-medium break-all">
+                                  {password}
+                                </p>
+                                <div className="flex space-x-1">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => showAnalysis(password)}
+                                    title="Analyze Password"
+                                  >
+                                    <Shield className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => savePassword(password)}
+                                    title="Save Password"
+                                  >
+                                    <Save className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => copyToClipboard(password, index + 100)}
+                                    title="Copy to Clipboard"
+                                  >
+                                    {copied === index + 100 ? (
+                                      <Check className="h-4 w-4 text-green-500" />
+                                    ) : (
+                                      <Copy className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span className={`font-medium ${strengthInfo.color}`}>
+                                  {strengthInfo.label}
+                                </span>
+                                <span className="text-slate-500 dark:text-slate-400">
+                                  Strength: {strength}%
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      <Button 
+                        className="w-full mb-6 flex items-center justify-center"
+                        onClick={handleGenerateCustomPasswords}
+                      >
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Generate More Passwords
+                      </Button>
+                      
+                      <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg">
+                        <h3 className="font-medium mb-2 flex items-center">
+                          <Shield className="h-4 w-4 mr-2" />
+                          Password Tips
+                        </h3>
+                        <ul className="text-sm space-y-1 list-disc pl-5 text-slate-600 dark:text-slate-300">
+                          <li>Use at least 12 characters for strong security</li>
+                          <li>Mix character types for the best protection</li>
+                          <li>Avoid personal information and common words</li>
+                          <li>Use different passwords for each website</li>
+                          <li>Consider using a password manager</li>
+                        </ul>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
-                
-                <Button 
-                  className="w-full mb-6 flex items-center justify-center"
-                  onClick={handleGenerateCustomPasswords}
-                >
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Generate More Passwords
-                </Button>
-                
-                <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg">
-                  <h3 className="font-medium mb-2 flex items-center">
-                    <Shield className="h-4 w-4 mr-2" />
-                    Password Tips
-                  </h3>
-                  <ul className="text-sm space-y-1 list-disc pl-5 text-slate-600 dark:text-slate-300">
-                    <li>Use at least 12 characters for strong security</li>
-                    <li>Mix character types for the best protection</li>
-                    <li>Avoid personal information and common words</li>
-                    <li>Use different passwords for each website</li>
-                    <li>Consider using a password manager</li>
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
+              </TabsContent>
+              
+              <TabsContent value="saved">
+                <Card className="border-none shadow-lg">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-xl flex items-center gap-2">
+                      <Star className="h-5 w-5" />
+                      Saved Passwords
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {savedPasswords.length > 0 ? (
+                      <div className="space-y-3">
+                        {savedPasswords.map((password, index) => {
+                          const strength = calculatePasswordStrength(password);
+                          const strengthInfo = getStrengthInfo(strength);
+                          
+                          return (
+                            <div key={index} className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
+                              <div className="flex justify-between items-center mb-2">
+                                <p className="font-mono text-lg font-medium break-all">
+                                  {password}
+                                </p>
+                                <div className="flex space-x-1">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => showAnalysis(password)}
+                                    title="Analyze Password"
+                                  >
+                                    <Shield className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => removeSavedPassword(password)}
+                                    title="Remove Password"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => copyToClipboard(password, index + 200)}
+                                    title="Copy to Clipboard"
+                                  >
+                                    {copied === index + 200 ? (
+                                      <Check className="h-4 w-4 text-green-500" />
+                                    ) : (
+                                      <Copy className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span className={`font-medium ${strengthInfo.color}`}>
+                                  {strengthInfo.label}
+                                </span>
+                                <span className="text-slate-500 dark:text-slate-400">
+                                  Strength: {strength}%
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-16">
+                        <Save className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
+                        <h3 className="text-lg font-medium text-slate-600 dark:text-slate-300 mb-2">No Saved Passwords</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+                          Your saved passwords will appear here. Click the save icon on any password to add it to this list.
+                        </p>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setActiveTab("themed")}
+                          className="mx-auto"
+                        >
+                          Generate Some Passwords
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </div>
-        </TabsContent>
-        
-        <TabsContent value="saved" className={activeTab === "saved" ? "block" : "hidden"}>
-          <Card className="border-none shadow-lg">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-xl flex items-center gap-2">
-                <Star className="h-5 w-5" />
-                Saved Passwords
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {savedPasswords.length > 0 ? (
-                <div className="space-y-3">
-                  {savedPasswords.map((password, index) => {
-                    const strength = calculatePasswordStrength(password);
-                    const strengthInfo = getStrengthInfo(strength);
-                    
-                    return (
-                      <div key={index} className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
-                        <div className="flex justify-between items-center mb-2">
-                          <p className="font-mono text-lg font-medium break-all">
-                            {password}
-                          </p>
-                          <div className="flex space-x-1">
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              onClick={() => showAnalysis(password)}
-                              title="Analyze Password"
-                            >
-                              <Shield className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              onClick={() => removeSavedPassword(password)}
-                              title="Remove Password"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              onClick={() => copyToClipboard(password, index + 200)}
-                              title="Copy to Clipboard"
-                            >
-                              {copied === index + 200 ? (
-                                <Check className="h-4 w-4 text-green-500" />
-                              ) : (
-                                <Copy className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                          <span className={`font-medium ${strengthInfo.color}`}>
-                            {strengthInfo.label}
-                          </span>
-                          <span className="text-slate-500 dark:text-slate-400">
-                            Strength: {strength}%
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-16">
-                  <Save className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-                  <h3 className="text-lg font-medium text-slate-600 dark:text-slate-300 mb-2">No Saved Passwords</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-                    Your saved passwords will appear here. Click the save icon on any password to add it to this list.
-                  </p>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setActiveTab("themed")}
-                    className="mx-auto"
-                  >
-                    Generate Some Passwords
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+        </header>
       </div>
       
       {/* Password Analysis Dialog */}
