@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Lock, KeyRound, Shield, Zap, Trophy, Star } from "lucide-react";
 import { Achievement } from "@/components/SecretAchievements";
 
+// Define icon types as strings instead of JSX
 const DEFAULT_DAILY_CHALLENGES = [
   {
     id: "strong_password",
@@ -13,7 +12,7 @@ const DEFAULT_DAILY_CHALLENGES = [
     description: "Create a password with uppercase, lowercase, numbers, and special characters",
     points: 50,
     completed: false,
-    icon: <Lock />
+    icon: "Lock"
   },
   {
     id: "high_entropy",
@@ -21,7 +20,7 @@ const DEFAULT_DAILY_CHALLENGES = [
     description: "Create a password with at least 80 bits of entropy",
     points: 75,
     completed: false,
-    icon: <Zap />
+    icon: "Zap"
   },
   {
     id: "uncrackable",
@@ -29,7 +28,7 @@ const DEFAULT_DAILY_CHALLENGES = [
     description: "Create a password that would take over 100 years to crack",
     points: 100,
     completed: false,
-    icon: <Shield />
+    icon: "Shield"
   }
 ];
 
@@ -38,7 +37,8 @@ const DEFAULT_ACHIEVEMENTS = [
     id: "first_password",
     title: "First Steps",
     description: "Test your first password",
-    icon: <Star className="h-5 w-5 text-amber-500" />,
+    icon: "Star",
+    iconColor: "text-amber-500",
     unlocked: false,
     secret: false,
     rarity: "common"
@@ -47,7 +47,8 @@ const DEFAULT_ACHIEVEMENTS = [
     id: "persistence",
     title: "Persistence Pays Off",
     description: "Test 10 different passwords",
-    icon: <Shield className="h-5 w-5 text-amber-500" />,
+    icon: "Shield",
+    iconColor: "text-amber-500",
     unlocked: false,
     secret: false,
     rarity: "uncommon"
@@ -56,7 +57,8 @@ const DEFAULT_ACHIEVEMENTS = [
     id: "entropy_master",
     title: "Entropy Master",
     description: "Create a password with 100+ bits of entropy",
-    icon: <Zap className="h-5 w-5 text-blue-500" />,
+    icon: "Zap",
+    iconColor: "text-blue-500",
     unlocked: false,
     secret: false,
     rarity: "rare"
@@ -65,7 +67,8 @@ const DEFAULT_ACHIEVEMENTS = [
     id: "first_game",
     title: "Game On",
     description: "Complete your first password mini-game",
-    icon: <Trophy className="h-5 w-5 text-amber-500" />,
+    icon: "Trophy",
+    iconColor: "text-amber-500",
     unlocked: false,
     secret: false,
     rarity: "common"
@@ -74,7 +77,8 @@ const DEFAULT_ACHIEVEMENTS = [
     id: "perfect_score",
     title: "Flawless Victory",
     description: "Score 100% on any mini-game",
-    icon: <Trophy className="h-5 w-5 text-purple-500" />,
+    icon: "Trophy",
+    iconColor: "text-purple-500",
     unlocked: false,
     secret: false,
     rarity: "rare"
@@ -83,7 +87,8 @@ const DEFAULT_ACHIEVEMENTS = [
     id: "passphrase_creator",
     title: "Phrase Master",
     description: "Generate a secure passphrase",
-    icon: <KeyRound className="h-5 w-5 text-green-500" />,
+    icon: "KeyRound",
+    iconColor: "text-green-500",
     unlocked: false,
     secret: false,
     rarity: "uncommon"
@@ -92,7 +97,8 @@ const DEFAULT_ACHIEVEMENTS = [
     id: "secret_decoder",
     title: "Secret Decoder",
     description: "Discover something hidden in the password arcade",
-    icon: <Lock className="h-5 w-5 text-purple-500" />,
+    icon: "Lock",
+    iconColor: "text-purple-500",
     unlocked: false,
     secret: true,
     rarity: "legendary"

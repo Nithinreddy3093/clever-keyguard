@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Achievement } from "@/components/SecretAchievements";
-import { Shield, Trophy, Star } from "lucide-react";
+import { Shield, Trophy, Star, Lock, KeyRound, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AchievementPopupProps {
@@ -40,6 +40,22 @@ const AchievementPopup = ({ achievement, onClose }: AchievementPopupProps) => {
     }
   };
   
+  // Render the appropriate icon based on string name
+  const renderIcon = () => {
+    if (typeof achievement.icon === 'string') {
+      switch (achievement.icon) {
+        case 'Shield': return <Shield className="h-6 w-6 text-amber-500" />;
+        case 'Trophy': return <Trophy className="h-6 w-6 text-amber-500" />;
+        case 'Star': return <Star className="h-6 w-6 text-amber-500" />;
+        case 'Lock': return <Lock className="h-6 w-6 text-amber-500" />;
+        case 'KeyRound': return <KeyRound className="h-6 w-6 text-amber-500" />;
+        case 'Zap': return <Zap className="h-6 w-6 text-amber-500" />;
+        default: return <Trophy className="h-6 w-6 text-amber-500" />;
+      }
+    }
+    return achievement.icon || <Trophy className="h-6 w-6 text-amber-500" />;
+  };
+  
   return (
     <AnimatePresence>
       {visible && (
@@ -55,7 +71,7 @@ const AchievementPopup = ({ achievement, onClose }: AchievementPopupProps) => {
                 "w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0",
                 "bg-amber-100 dark:bg-amber-900/30"
               )}>
-                {achievement.icon || <Trophy className="h-6 w-6 text-amber-500" />}
+                {renderIcon()}
               </div>
               
               <div className="flex-1">

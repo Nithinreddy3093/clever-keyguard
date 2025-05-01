@@ -10,9 +10,8 @@ import LeaderboardTab from "./LeaderboardTab";
 import { DailyChallenge } from "./DailyChallenges";
 import SecurityDashboard from "@/components/SecurityDashboard";
 import PasswordQuests from "@/components/PasswordQuests";
-import SecretAchievements from "@/components/SecretAchievements";
+import SecretAchievements, { Achievement } from "@/components/SecretAchievements";
 import PasswordGames from "./PasswordGames";
-import { AchievementData } from "@/hooks/useGameProgress";
 
 interface GameTabsProps {
   username: string;
@@ -31,7 +30,7 @@ interface GameTabsProps {
   globalRank: number | null;
   questsCompleted: any[];
   onQuestComplete: (quest: any) => void;
-  achievements: AchievementData[];
+  achievements: Achievement[];
   onViewAchievement: (achievement: any) => void;
 }
 
@@ -146,18 +145,7 @@ const GameTabs = ({
             />
             
             <SecretAchievements
-              achievements={achievements.map(achievement => ({
-                ...achievement,
-                rarity: achievement.rarity || "common",
-                secret: achievement.secret || false,
-                icon: (() => {
-                  switch (achievement.icon) {
-                    case "🔐": return <Award className="h-5 w-5 text-indigo-500" />;
-                    case "🛡️": return <Shield className="h-5 w-5 text-blue-500" />;
-                    default: return <Award className="h-5 w-5 text-primary" />;
-                  }
-                })()
-              }))}
+              achievements={achievements}
               onViewAchievement={onViewAchievement}
             />
           </>

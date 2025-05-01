@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, Gift, Star, Lock, Trophy, Award } from "lucide-react";
+import { Sparkles, Gift, Star, Lock, Trophy, Award, Shield, Zap, KeyRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
@@ -9,10 +9,12 @@ export interface Achievement {
   id: string;
   title: string;
   description: string;
-  icon: JSX.Element;
+  icon: JSX.Element | string;
+  iconColor?: string;
   unlocked: boolean;
   secret: boolean;
   rarity: "common" | "uncommon" | "rare" | "legendary";
+  unlockedAt?: string;
 }
 
 interface SecretAchievementsProps {
@@ -52,6 +54,24 @@ const SecretAchievements = ({
       default:
         return "bg-slate-500";
     }
+  };
+
+  // Render the appropriate icon based on string name
+  const renderIcon = (achievement: Achievement) => {
+    if (typeof achievement.icon === 'string') {
+      const color = achievement.iconColor || "text-amber-500";
+      
+      switch (achievement.icon) {
+        case 'Shield': return <Shield className={`h-5 w-5 ${color}`} />;
+        case 'Trophy': return <Trophy className={`h-5 w-5 ${color}`} />;
+        case 'Star': return <Star className={`h-5 w-5 ${color}`} />;
+        case 'Lock': return <Lock className={`h-5 w-5 ${color}`} />;
+        case 'KeyRound': return <KeyRound className={`h-5 w-5 ${color}`} />;
+        case 'Zap': return <Zap className={`h-5 w-5 ${color}`} />;
+        default: return <Award className={`h-5 w-5 ${color}`} />;
+      }
+    }
+    return achievement.icon || <Award className="h-5 w-5 text-amber-500" />;
   };
 
   return (
@@ -141,7 +161,7 @@ const SecretAchievements = ({
                     : "bg-slate-200 dark:bg-slate-600"
                 )}>
                   {achievement.unlocked ? (
-                    achievement.icon || <Award className={`h-5 w-5 text-amber-500`} />
+                    renderIcon(achievement)
                   ) : (
                     <Lock className="h-5 w-5 text-slate-400" />
                   )}
