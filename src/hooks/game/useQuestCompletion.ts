@@ -18,6 +18,7 @@ export const useQuestCompletion = () => {
   } = useGameProgress();
 
   const handleQuestComplete = (quest: any) => {
+    // Check if quest is already completed
     if (questsCompleted.some(q => q.id === quest.id)) {
       return;
     }

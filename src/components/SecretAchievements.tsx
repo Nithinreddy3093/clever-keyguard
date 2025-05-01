@@ -9,7 +9,7 @@ export interface Achievement {
   id: string;
   title: string;
   description: string;
-  icon: JSX.Element | string;
+  icon: JSX.Element | string; // Allow either JSX element or string icon name
   iconColor?: string;
   unlocked: boolean;
   secret: boolean;

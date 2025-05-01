@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/card";
+import { Button } from "@/components/ui/button"; // Fixed import path
 import { Link } from "react-router-dom";
 import { 
   ArrowLeft, Gamepad2, Skull, Flame, Trophy, Crown, Lock, 
