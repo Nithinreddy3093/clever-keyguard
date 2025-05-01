@@ -250,7 +250,14 @@ const Index = () => {
           <p className="text-xl text-slate-600 dark:text-slate-300">
             Advanced analysis with AI-powered security features
           </p>
+          
           <div className="mt-6 flex flex-wrap justify-center gap-2">
+            <Button asChild variant="default" className="mx-2">
+              <Link to="/chat" className="flex items-center">
+                <Bot className="mr-2 h-4 w-4" />
+                AI Security Assistant
+              </Link>
+            </Button>
             <Button asChild variant="outline" className="mx-2">
               <Link to="/passphrase" className="flex items-center">
                 <KeyRound className="mr-2 h-4 w-4" />
@@ -325,8 +332,19 @@ const Index = () => {
                   )}
                 </div>
                 
-                {user && (
-                  <div className="mt-4 flex justify-end">
+                <div className="flex flex-wrap gap-2 mt-4">
+                  <Button 
+                    asChild
+                    variant="secondary"
+                    className="flex items-center"
+                  >
+                    <Link to="/chat">
+                      <Bot className="mr-2 h-4 w-4" />
+                      Ask AI Assistant About This Password
+                    </Link>
+                  </Button>
+                  
+                  {user && (
                     <Button 
                       onClick={handleSaveAnalysis}
                       disabled={savePasswordMutation.isPending}
@@ -335,8 +353,8 @@ const Index = () => {
                       <Save className="mr-2 h-4 w-4" />
                       {savePasswordMutation.isPending ? "Saving..." : "Save Analysis"}
                     </Button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
           </CardContent>
@@ -378,3 +396,4 @@ const Index = () => {
 };
 
 export default Index;
+
