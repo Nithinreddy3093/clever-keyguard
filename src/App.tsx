@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -19,6 +18,7 @@ import PasswordGame from "./pages/PasswordGame";
 import PasswordArcade from "./pages/PasswordArcade";
 import ServicePasswords from "./pages/ServicePasswords";
 import NotFound from "./pages/NotFound";
+import PremiumPasswordGenerator from "@/pages/PremiumPasswordGenerator";
 
 // Create a new QueryClient instance
 const queryClient = new QueryClient();
@@ -40,6 +40,7 @@ function App() {
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/history" element={<History />} />
                   <Route path="/passphrase-generator" element={<PassphraseGenerator />} />
+                  <Route path="/premium-password-generator" element={<PremiumPasswordGenerator />} />
                   <Route path="/chat" element={<PasswordChat />} />
                   <Route path="/theme-passwords" element={<ThemePasswordGenerator />} />
                   <Route path="/rankings" element={<PasswordRankings />} />
