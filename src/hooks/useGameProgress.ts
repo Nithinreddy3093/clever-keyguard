@@ -11,24 +11,30 @@ const DEFAULT_DAILY_CHALLENGES = [
     title: "Create a Strong Password",
     description: "Create a password with uppercase, lowercase, numbers, and special characters",
     points: 50,
+    xp: 50,
     completed: false,
-    icon: "Lock"
+    icon: "Lock",
+    expiresAt: new Date(new Date().setHours(23, 59, 59, 999)).toISOString()
   },
   {
     id: "high_entropy",
     title: "High Entropy Champion",
     description: "Create a password with at least 80 bits of entropy",
     points: 75,
+    xp: 75,
     completed: false,
-    icon: "Zap"
+    icon: "Zap",
+    expiresAt: new Date(new Date().setHours(23, 59, 59, 999)).toISOString()
   },
   {
     id: "uncrackable",
     title: "Practically Uncrackable",
     description: "Create a password that would take over 100 years to crack",
     points: 100,
+    xp: 100,
     completed: false,
-    icon: "Shield"
+    icon: "Shield",
+    expiresAt: new Date(new Date().setHours(23, 59, 59, 999)).toISOString()
   }
 ];
 
@@ -292,11 +298,11 @@ const useGameProgress = () => {
     const updatedChallenges = dailyChallenges.map(c => {
       if (c.id === challenge.id && !c.completed) {
         // Award XP for completing the challenge
-        addXp(challenge.points);
+        addXp(challenge.xp);
         
         toast({
           title: "Challenge Complete!",
-          description: `You've completed the "${challenge.title}" challenge and earned ${challenge.points} XP!`,
+          description: `You've completed the "${challenge.title}" challenge and earned ${challenge.xp} XP!`,
         });
         
         return { ...c, completed: true };
@@ -320,6 +326,22 @@ const useGameProgress = () => {
       localStorage.setItem('dailyChallenges', JSON.stringify(resetChallenges));
       localStorage.setItem('lastChallengeReset', today);
     }
+  };
+
+  // Generate daily challenges with proper expiration dates
+  const generateDailyChallenges = () => {
+    const today = new Date();
+    const expiryDate = new Date(today.setHours(23, 59, 59, 999)).toISOString();
+    
+    const challenges = DEFAULT_DAILY_CHALLENGES.map(c => ({
+      ...c,
+      expiresAt: expiryDate
+    }));
+    
+    setDailyChallenges(challenges);
+    localStorage.setItem('dailyChallenges', JSON.stringify(challenges));
+    
+    return challenges;
   };
 
   // Update user's daily streak
@@ -465,7 +487,8 @@ const useGameProgress = () => {
     handleDailyChallengeComplete,
     updateUserStreak,
     checkGlobalRank,
-    incrementGamesPlayed
+    incrementGamesPlayed,
+    generateDailyChallenges // Add this function to the return object
   };
 };
 

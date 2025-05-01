@@ -12,6 +12,8 @@ export interface DailyChallenge {
   description: string;
   completed: boolean;
   xp: number;
+  points: number; // Added to match the structure in useGameProgress
+  icon: string;   // Changed to match the icon format in useGameProgress
   expiresAt: string;
 }
 

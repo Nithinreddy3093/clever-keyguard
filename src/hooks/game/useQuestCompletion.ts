@@ -3,6 +3,15 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import useGameProgress from "@/hooks/useGameProgress";
 
+interface Quest {
+  id: string;
+  title: string;
+  description: string;
+  completed: boolean;
+  completedAt?: string;
+  xp: number;
+}
+
 export const useQuestCompletion = () => {
   const [showReward, setShowReward] = useState(false);
   const [rewardText, setRewardText] = useState("");
@@ -23,7 +32,7 @@ export const useQuestCompletion = () => {
       return;
     }
     
-    const completedQuest = {
+    const completedQuest: Quest = {
       id: quest.id,
       title: quest.title,
       description: quest.description,
