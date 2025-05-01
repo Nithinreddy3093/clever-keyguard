@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Settings, Shield, LockKeyhole, Puzzle, KeyRound, Crown } from "lucide-react";
+import { Sparkles, Settings, Shield, LockKeyhole, Puzzle, KeyRound } from "lucide-react";
 import { analyzePassword } from "@/lib/password/analyzer";
 import PasswordTester from "@/components/game/PasswordTester";
 import DailyChallenges from "@/components/game/DailyChallenges";
@@ -167,19 +167,6 @@ function Index() {
                   <div className="flex items-center">
                     <Shield className="mr-2 h-4 w-4" />
                     <span>Passphrase Generator</span>
-                  </div>
-                </Link>
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                className="w-full justify-start bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border-amber-200 dark:border-amber-700"
-                asChild
-              >
-                <Link to="/premium-password-generator">
-                  <div className="flex items-center">
-                    <Crown className="mr-2 h-4 w-4 text-amber-500" />
-                    <span>Premium Password Generator</span>
                   </div>
                 </Link>
               </Button>
